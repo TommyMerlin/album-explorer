@@ -39,6 +39,16 @@ const router = createRouter({
       component: () => import('../views/TagsPage.vue'),
     },
     {
+      path: '/albums',
+      name: 'albums',
+      component: () => import('../views/AlbumsPage.vue'),
+    },
+    {
+      path: '/albums/:id',
+      name: 'album-detail',
+      component: () => import('../views/AlbumDetailPage.vue'),
+    },
+    {
       path: '/search',
       redirect: to => ({ path: '/explore', query: to.query }),
     },

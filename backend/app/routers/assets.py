@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import shutil
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from app.config import settings
 from app.database import get_db
 from app.models import AssetBrief, AssetDetail, PaginatedResponse
 from app.services.query_builder import BRIEF_COLS, QueryBuilder
@@ -190,3 +193,57 @@ async def get_similar_assets(asset_id: int, limit: int = Query(12, ge=1, le=50))
     if not rows:
         raise HTTPException(status_code=404, detail="未找到相似图片")
     return [_row_to_brief(r) for r in rows]
+
+
+TRASH_DIR = Path("/mnt/d/数据备份/图像/.trash")
+
+
+@router.delete("/{asset_id}")
+async def delete_asset(asset_id: int, confirm: bool = Query(False)):
+    """删除图片：原图移到回收站，缩略图删除，数据库标记 deleted。"""
+    if not confirm:
+        raise HTTPException(status_code=400, detail="请确认删除操作 (confirm=true)")
+
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT asset_id, rel_path, abs_path FROM assets WHERE asset_id = ? AND status = 'done'",
+        [asset_id],
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="资源不存在")
+
+    # 移动原图到回收站
+    src = Path(row["abs_path"])
+    if src.exists():
+        dest = TRASH_DIR / row["rel_path"]
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(src), str(dest))
+
+    # 删除缩略图
+    for sub in ["sm", "md"]:
+        thumb = settings.thumbnail_dir / sub / f"{asset_id}.webp"
+        if thumb.exists():
+            thumb.unlink()
+    full_cache = settings.thumbnail_dir / "full" / f"{asset_id}.jpg"
+    if full_cache.exists():
+        full_cache.unlink()
+
+    # 数据库标记删除
+    await db.execute("UPDATE assets SET status = 'deleted' WHERE asset_id = ?", [asset_id])
+
+    # 清理邻居表
+    await db.execute("DELETE FROM asset_neighbors WHERE asset_id = ? OR neighbor_id = ?", [asset_id, asset_id])
+
+    # 清理 FTS5
+    try:
+        await db.execute(
+            "INSERT INTO assets_fts(assets_fts, rowid, caption_short, scene, tags_text, city_name) "
+            "VALUES('delete', ?, '', '', '', '')",
+            [asset_id],
+        )
+    except Exception:
+        pass
+
+    await db.commit()
+    return {"status": "deleted", "asset_id": asset_id}

@@ -117,7 +117,30 @@
           </div>
 
           <div class="mt-4 pt-3 border-t border-gray-100">
-            <p class="text-xs text-gray-400 break-all">{{ detail.rel_path }}</p>
+            <p class="text-xs text-gray-400 break-all mb-3">{{ detail.rel_path }}</p>
+            <div class="space-y-2">
+              <button
+                @click="showAlbumPicker = !showAlbumPicker"
+                class="w-full px-3 py-1.5 text-sm text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
+              >添加到相册</button>
+              <div v-if="showAlbumPicker" class="border border-gray-200 rounded-lg p-2 space-y-1">
+                <div v-if="!albumList.length" class="text-xs text-gray-400 text-center py-2">暂无相册</div>
+                <button
+                  v-for="a in albumList"
+                  :key="a.id"
+                  @click="handleAddToAlbum(a.id)"
+                  class="w-full text-left px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                >{{ a.name }}</button>
+                <button
+                  @click="handleCreateAndAdd"
+                  class="w-full text-left px-2 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded"
+                >+ 新建相册</button>
+              </div>
+              <button
+                @click="handleDelete"
+                class="w-full px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+              >删除图片</button>
+            </div>
           </div>
         </div>
       </div>
@@ -128,26 +151,68 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
 import { useUiStore } from '../../stores/ui'
-import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
+import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, fetchAlbums, createAlbum, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief, type Album } from '../../api'
+
+const emit = defineEmits<{ deleted: [assetId: number] }>()
 
 const ui = useUiStore()
 const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
 const similar = ref<AssetBrief[]>([])
+const showAlbumPicker = ref(false)
+const albumList = ref<Album[]>([])
+
+async function handleAddToAlbum(albumId: number) {
+  if (!detail.value) return
+  try {
+    await addAssetToAlbum(albumId, detail.value.asset_id)
+    showAlbumPicker.value = false
+    alert('已添加到相册')
+  } catch (e: any) {
+    alert(e?.response?.data?.detail || '添加失败')
+  }
+}
+
+async function handleCreateAndAdd() {
+  const name = prompt('新相册名称：')
+  if (!name || !detail.value) return
+  const album = await createAlbum(name)
+  await addAssetToAlbum(album.id, detail.value.asset_id)
+  showAlbumPicker.value = false
+  albumList.value = await fetchAlbums()
+  alert('已创建相册并添加')
+}
+
+async function handleDelete() {
+  if (!detail.value) return
+  const confirmed = window.confirm(`确定要删除这张图片吗？\n${detail.value.caption_short || detail.value.rel_path}\n\n原图将移到回收站。`)
+  if (!confirmed) return
+  try {
+    await deleteAsset(detail.value.asset_id)
+    const deletedId = detail.value.asset_id
+    ui.closeDetail()
+    emit('deleted', deletedId)
+  } catch (e: any) {
+    alert('删除失败：' + (e?.response?.data?.detail || e.message))
+  }
+}
 
 watch(() => ui.detailAssetId, async (id) => {
   if (id !== null) {
     detail.value = null
     context.value = null
     similar.value = []
-    const [d, c, s] = await Promise.all([
+    showAlbumPicker.value = false
+    const [d, c, s, albums] = await Promise.all([
       fetchAssetDetail(id),
       fetchAssetContext(id),
       fetchSimilarAssets(id, 8).catch(() => []),
+      fetchAlbums().catch(() => []),
     ])
     detail.value = d
     context.value = c
     similar.value = s
+    albumList.value = albums
   }
 })
 </script>

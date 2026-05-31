@@ -33,6 +33,27 @@
         <PhotoGrid :items="recentAssets" />
       </section>
 
+      <!-- 随机精选 -->
+      <section v-if="recommendations && recommendations.random.length" class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-800">随机精选</h2>
+          <button @click="refreshRecommendations" class="text-sm text-primary-600 hover:text-primary-700">换一批</button>
+        </div>
+        <PhotoGrid :items="recommendations.random" />
+      </section>
+
+      <!-- 热门主题 -->
+      <section v-if="recommendations && recommendations.cluster.items.length" class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-800">主题推荐：{{ recommendations.cluster.name }}</h2>
+          <router-link
+            :to="{ path: '/explore', query: { cluster_id: String(recommendations.cluster.cluster_id) } }"
+            class="text-sm text-primary-600 hover:text-primary-700"
+          >查看全部</router-link>
+        </div>
+        <PhotoGrid :items="recommendations.cluster.items" />
+      </section>
+
       <!-- 已保存搜索 -->
       <section v-if="savedSearches.length" class="mb-8">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">已保存搜索</h2>
@@ -69,25 +90,32 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchStats, fetchAssets, fetchSavedSearches, type StatsOverview, type AssetBrief, type SavedSearch } from '../api'
+import { fetchStats, fetchAssets, fetchSavedSearches, fetchRecommendations, type StatsOverview, type AssetBrief, type SavedSearch, type Recommendations } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 
 const stats = ref<StatsOverview | null>(null)
 const recentAssets = ref<AssetBrief[]>([])
 const savedSearches = ref<SavedSearch[]>([])
+const recommendations = ref<Recommendations | null>(null)
 const loading = ref(true)
+
+async function refreshRecommendations() {
+  recommendations.value = await fetchRecommendations()
+}
 
 onMounted(async () => {
   try {
-    const [s, a, ss] = await Promise.all([
+    const [s, a, ss, rec] = await Promise.all([
       fetchStats(),
       fetchAssets({ page: 1, page_size: 24, sort_by: 'taken_at', order: 'desc' }),
       fetchSavedSearches().catch(() => []),
+      fetchRecommendations().catch(() => null),
     ])
     stats.value = s
     recentAssets.value = a.items
     savedSearches.value = ss
+    recommendations.value = rec
   } finally {
     loading.value = false
   }

@@ -200,6 +200,20 @@ export async function fetchStats() {
   return res.data
 }
 
+export interface Recommendations {
+  random: AssetBrief[]
+  cluster: {
+    name: string | null
+    cluster_id: number | null
+    items: AssetBrief[]
+  }
+}
+
+export async function fetchRecommendations() {
+  const res = await api.get<Recommendations>('/recommendations')
+  return res.data
+}
+
 export interface SavedSearch {
   id: number
   name: string
@@ -220,6 +234,53 @@ export async function createSavedSearch(name: string, query_json: Record<string,
 
 export async function deleteSavedSearch(id: number) {
   await api.delete(`/saved-searches/${id}`)
+}
+
+export async function deleteAsset(id: number) {
+  const res = await api.delete(`/assets/${id}`, { params: { confirm: true } })
+  return res.data
+}
+
+export interface Album {
+  id: number
+  name: string
+  description: string
+  cover_asset_id: number | null
+  asset_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AlbumDetail extends Album {
+  items: AssetBrief[]
+}
+
+export async function fetchAlbums() {
+  const res = await api.get<Album[]>('/albums')
+  return res.data
+}
+
+export async function createAlbum(name: string, description = '') {
+  const res = await api.post<Album>('/albums', { name, description })
+  return res.data
+}
+
+export async function fetchAlbumDetail(id: number) {
+  const res = await api.get<AlbumDetail>(`/albums/${id}`)
+  return res.data
+}
+
+export async function deleteAlbum(id: number) {
+  await api.delete(`/albums/${id}`)
+}
+
+export async function addAssetToAlbum(albumId: number, assetId: number) {
+  const res = await api.post(`/albums/${albumId}/assets`, { asset_id: assetId })
+  return res.data
+}
+
+export async function removeAssetFromAlbum(albumId: number, assetId: number) {
+  await api.delete(`/albums/${albumId}/assets/${assetId}`)
 }
 
 export default api

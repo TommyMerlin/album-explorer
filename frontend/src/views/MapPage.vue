@@ -58,12 +58,9 @@ function addPointLayer(points: MapPoint[]) {
 
   for (const p of points) {
     const marker = L.marker([p.lat, p.lng])
-    marker.bindPopup(`
-      <div style="text-align:center">
-        <img src="${thumbnailUrl(p.asset_id, 'sm')}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;margin-bottom:4px" />
-        <p style="font-size:12px;margin:0">${p.caption_short || ''}</p>
-      </div>
-    `)
+    if (p.caption_short) {
+      marker.bindTooltip(p.caption_short, { direction: 'top', offset: [0, -10] })
+    }
     marker.on('click', () => {
       ui.openDetail(p.asset_id)
     })

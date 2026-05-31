@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import json
 import time
 
 from fastapi import APIRouter
 
 from app.database import get_db
 from app.models import StatsOverview
+from app.services.query_builder import BRIEF_COLS
+from app.routers.assets import _row_to_brief
 
-router = APIRouter(prefix="/api/stats", tags=["stats"])
+router = APIRouter(prefix="/api", tags=["stats"])
 
 _cache: dict = {"data": None, "ts": 0}
 _CACHE_TTL = 300  # 5 分钟
 
 
-@router.get("")
+@router.get("/stats")
 async def get_stats() -> StatsOverview:
     now = time.time()
     if _cache["data"] and (now - _cache["ts"]) < _CACHE_TTL:
@@ -53,3 +56,40 @@ async def get_stats() -> StatsOverview:
     _cache["data"] = result
     _cache["ts"] = now
     return result
+
+
+@router.get("/recommendations")
+async def get_recommendations():
+    """首页推荐：随机精选 + 热门主题聚类。"""
+    db = await get_db()
+    cols = BRIEF_COLS.replace("a.", "")
+
+    # 随机精选 12 张
+    cursor = await db.execute(
+        f"SELECT {cols} FROM assets WHERE status='done' ORDER BY RANDOM() LIMIT 12"
+    )
+    random_items = [_row_to_brief(r) for r in await cursor.fetchall()]
+
+    # 随机选一个聚类，取其图片
+    cursor = await db.execute(
+        "SELECT cluster_id, cluster_name FROM clusters ORDER BY RANDOM() LIMIT 1"
+    )
+    cluster_row = await cursor.fetchone()
+    cluster_items = []
+    cluster_name = None
+    if cluster_row:
+        cluster_name = cluster_row["cluster_name"]
+        cursor = await db.execute(
+            f"SELECT {cols} FROM assets WHERE status='done' AND cluster_id=? ORDER BY RANDOM() LIMIT 12",
+            [cluster_row["cluster_id"]],
+        )
+        cluster_items = [_row_to_brief(r) for r in await cursor.fetchall()]
+
+    return {
+        "random": random_items,
+        "cluster": {
+            "name": cluster_name,
+            "cluster_id": cluster_row["cluster_id"] if cluster_row else None,
+            "items": cluster_items,
+        },
+    }
