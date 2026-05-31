@@ -41,20 +41,29 @@ const query = ref('')
 const page = ref(1)
 const totalPages = ref(1)
 const total = ref(0)
+let searchController: AbortController | null = null
 
 async function doSearch(q: string) {
   if (!q.trim()) return
+  if (searchController) searchController.abort()
+  searchController = new AbortController()
+  const signal = searchController.signal
+
   query.value = q
   loading.value = true
   searched.value = true
   page.value = 1
   try {
     const res = await searchAssets(q, { page: 1, page_size: 50 })
+    if (signal.aborted) return
     items.value = res.items
     total.value = res.total
     totalPages.value = res.total_pages
+  } catch (e: any) {
+    if (e?.name === 'AbortError') return
+    throw e
   } finally {
-    loading.value = false
+    if (!signal.aborted) loading.value = false
   }
 }
 

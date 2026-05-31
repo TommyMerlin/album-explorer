@@ -47,6 +47,7 @@ async def _ensure_fts(db: aiosqlite.Connection) -> None:
             "COALESCE(tags_text,''), COALESCE(city_name,'') FROM assets WHERE status='done'"
         )
 
+    await db.execute("INSERT INTO assets_fts(assets_fts) VALUES('rebuild')")
     await _ensure_fts_triggers(db)
     await db.commit()
 
