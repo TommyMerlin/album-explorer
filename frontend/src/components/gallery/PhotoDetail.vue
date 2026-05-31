@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="ui.detailModalOpen"
-      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70"
       @click.self="ui.closeDetail()"
     >
       <div class="relative bg-white rounded-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden flex">

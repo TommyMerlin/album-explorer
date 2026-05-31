@@ -7,12 +7,7 @@
           @click="toggleSelectMode"
           class="px-3 py-1.5 text-sm border rounded-lg transition-colors"
           :class="selectMode ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-        >{{ selectMode ? `已选 ${selectedIds.size} 张` : '多选' }}</button>
-        <button
-          v-if="selectMode && selectedIds.size > 0"
-          @click="handleBatchAddToAlbum"
-          class="px-3 py-1.5 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600"
-        >添加到相册</button>
+        >{{ selectMode ? '选择中' : '多选' }}</button>
         <button
           v-if="selectMode"
           @click="cancelSelect"
@@ -54,12 +49,30 @@
       </div>
     </template>
     <PhotoDetail />
+
+    <!-- 底部操作栏 -->
+    <div
+      v-if="selectMode && selectedIds.size > 0"
+      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between z-[9999]"
+    >
+      <span class="text-sm text-gray-600">已选择 {{ selectedIds.size }} 张</span>
+      <div class="flex items-center gap-3">
+        <button
+          @click="handleBatchAddToAlbum"
+          class="px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+        >添加到相册</button>
+        <button
+          @click="handleBatchDelete"
+          class="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+        >批量删除</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { fetchTimeline, fetchTimelineMonth, fetchAlbums, createAlbum, addAssetToAlbum, thumbnailUrl, type TimelineBucket, type AssetBrief, type Album } from '../api'
+import { fetchTimeline, fetchTimelineMonth, fetchAlbums, createAlbum, addAssetToAlbum, deleteAsset, thumbnailUrl, type TimelineBucket, type AssetBrief, type Album } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 
@@ -117,6 +130,25 @@ async function handleBatchAddToAlbum() {
     } catch {}
   }
   alert(`已添加 ${added} 张图片到相册`)
+  selectMode.value = false
+  selectedIds.clear()
+}
+
+async function handleBatchDelete() {
+  if (selectedIds.size === 0) return
+  if (!window.confirm(`确定要删除选中的 ${selectedIds.size} 张图片吗？\n原图将移到回收站。`)) return
+  let deleted = 0
+  for (const assetId of selectedIds) {
+    try {
+      await deleteAsset(assetId)
+      deleted++
+      // 从当前列表中移除
+      for (const month in monthAssets) {
+        monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== assetId)
+      }
+    } catch {}
+  }
+  alert(`已删除 ${deleted} 张图片`)
   selectMode.value = false
   selectedIds.clear()
 }

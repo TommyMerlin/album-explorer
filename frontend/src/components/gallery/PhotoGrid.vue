@@ -19,9 +19,14 @@
         @load="loadedSet.add(asset.asset_id)"
         @error="errorSet.add(asset.asset_id)"
       />
-      <!-- 选中标记 -->
-      <div v-if="selectable && selectedSet.has(asset.asset_id)" class="absolute top-1 right-1 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- 选择圆圈 -->
+      <div
+        v-if="selectable"
+        class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors z-10"
+        :class="selectedSet.has(asset.asset_id) ? 'bg-primary-500 border-primary-500' : 'border-white bg-black/20'"
+        @click.stop="emit('toggle', asset.asset_id)"
+      >
+        <svg v-if="selectedSet.has(asset.asset_id)" class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
         </svg>
       </div>
@@ -34,7 +39,7 @@
           <p class="text-[10px]">文件缺失</p>
         </div>
       </div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+      <div v-if="!selectable" class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
         <div class="absolute bottom-0 left-0 right-0 p-2">
           <p class="text-white text-xs line-clamp-2">{{ asset.caption_short }}</p>
         </div>
