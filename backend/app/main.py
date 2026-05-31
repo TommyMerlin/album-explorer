@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import close_db
-from app.routers import assets, clusters, map_view, search, stats, tags, thumbnails, timeline
+from app.routers import assets, clusters, map_view, saved_searches, search, stats, tags, thumbnails, timeline
 
 
 @asynccontextmanager
@@ -50,6 +50,7 @@ app.include_router(clusters.router)
 app.include_router(search.router)
 app.include_router(tags.router)
 app.include_router(stats.router)
+app.include_router(saved_searches.router)
 
 
 @app.get("/api/health")

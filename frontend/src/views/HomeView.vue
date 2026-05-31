@@ -33,6 +33,21 @@
         <PhotoGrid :items="recentAssets" />
       </section>
 
+      <!-- 已保存搜索 -->
+      <section v-if="savedSearches.length" class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">已保存搜索</h2>
+        <div class="flex flex-wrap gap-2">
+          <router-link
+            v-for="s in savedSearches"
+            :key="s.id"
+            :to="{ path: '/explore', query: s.query_json }"
+            class="px-3 py-1.5 bg-white border border-primary-200 rounded-full text-sm text-primary-700 hover:bg-primary-50 transition-colors"
+          >
+            {{ s.name }}
+          </router-link>
+        </div>
+      </section>
+
       <!-- 热门城市 -->
       <section v-if="stats && stats.top_cities.length">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">热门地点</h2>
@@ -54,22 +69,25 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchStats, fetchAssets, type StatsOverview, type AssetBrief } from '../api'
+import { fetchStats, fetchAssets, fetchSavedSearches, type StatsOverview, type AssetBrief, type SavedSearch } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 
 const stats = ref<StatsOverview | null>(null)
 const recentAssets = ref<AssetBrief[]>([])
+const savedSearches = ref<SavedSearch[]>([])
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const [s, a] = await Promise.all([
+    const [s, a, ss] = await Promise.all([
       fetchStats(),
       fetchAssets({ page: 1, page_size: 24, sort_by: 'taken_at', order: 'desc' }),
+      fetchSavedSearches().catch(() => []),
     ])
     stats.value = s
     recentAssets.value = a.items
+    savedSearches.value = ss
   } finally {
     loading.value = false
   }

@@ -11,6 +11,38 @@ from app.models import MapPoint
 router = APIRouter(prefix="/api/map", tags=["map"])
 
 
+@router.get("/cities")
+async def get_map_cities():
+    """按城市聚合，返回城市名、数量、中心坐标、代表图。"""
+    db = await get_db()
+    sql = """
+        SELECT
+            city_name,
+            province_name,
+            COUNT(*) AS count,
+            AVG(gps_lat) AS lat,
+            AVG(gps_lng) AS lng,
+            MIN(asset_id) AS representative_asset_id
+        FROM assets
+        WHERE status = 'done' AND city_name IS NOT NULL AND gps_lat IS NOT NULL
+        GROUP BY city_name
+        ORDER BY count DESC
+    """
+    cursor = await db.execute(sql)
+    rows = await cursor.fetchall()
+    return [
+        {
+            "city": r["city_name"],
+            "province": r["province_name"],
+            "count": r["count"],
+            "lat": r["lat"],
+            "lng": r["lng"],
+            "representative_asset_id": r["representative_asset_id"],
+        }
+        for r in rows
+    ]
+
+
 @router.get("/points")
 async def get_map_points(
     south: float | None = None,

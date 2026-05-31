@@ -156,6 +156,20 @@ export async function fetchMapPoints(params: Record<string, any> = {}) {
   return res.data
 }
 
+export interface CityAggregate {
+  city: string
+  province: string
+  count: number
+  lat: number
+  lng: number
+  representative_asset_id: number
+}
+
+export async function fetchMapCities() {
+  const res = await api.get<CityAggregate[]>('/map/cities')
+  return res.data
+}
+
 export async function fetchClusters() {
   const res = await api.get<ClusterInfo[]>('/clusters')
   return res.data
@@ -184,6 +198,28 @@ export async function fetchTagGraph(minWeight = 10) {
 export async function fetchStats() {
   const res = await api.get<StatsOverview>('/stats')
   return res.data
+}
+
+export interface SavedSearch {
+  id: number
+  name: string
+  query_json: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+export async function fetchSavedSearches() {
+  const res = await api.get<SavedSearch[]>('/saved-searches')
+  return res.data
+}
+
+export async function createSavedSearch(name: string, query_json: Record<string, any>) {
+  const res = await api.post<SavedSearch>('/saved-searches', { name, query_json })
+  return res.data
+}
+
+export async function deleteSavedSearch(id: number) {
+  await api.delete(`/saved-searches/${id}`)
 }
 
 export default api

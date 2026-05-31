@@ -33,10 +33,17 @@
     <!-- 结果信息 -->
     <div v-if="loaded && total > 0" class="flex items-center justify-between mb-4">
       <p class="text-sm text-gray-400">找到 {{ total.toLocaleString() }} 个结果</p>
-      <select v-model="sortOption" @change="onSortChange" class="text-sm border border-gray-200 rounded px-2 py-1">
-        <option value="taken_at:desc">时间倒序</option>
-        <option value="taken_at:asc">时间正序</option>
-      </select>
+      <div class="flex items-center gap-3">
+        <button
+          v-if="filters.hasFilters"
+          @click="saveSearch"
+          class="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50"
+        >保存搜索</button>
+        <select v-model="sortOption" @change="onSortChange" class="text-sm border border-gray-200 rounded px-2 py-1">
+          <option value="taken_at:desc">时间倒序</option>
+          <option value="taken_at:asc">时间正序</option>
+        </select>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -74,7 +81,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchAssets, type AssetBrief } from '../api'
+import { fetchAssets, createSavedSearch, type AssetBrief } from '../api'
 import { useFiltersStore } from '../stores/filters'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
@@ -136,6 +143,15 @@ function goPage(p: number) {
 
 function syncToUrl() {
   router.replace({ path: '/explore', query: filters.toRouteQuery() })
+}
+
+async function saveSearch() {
+  const tags = filterTags.value
+  const name = prompt('为这个搜索命名：', Object.values(tags).join(' + '))
+  if (!name) return
+  const queryJson = { ...filters.toRouteQuery() }
+  await createSavedSearch(name, queryJson)
+  alert('已保存')
 }
 
 async function loadData() {
