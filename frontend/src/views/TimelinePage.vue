@@ -207,9 +207,7 @@ async function toggleMonth(month: string) {
 onMounted(async () => {
   try {
     timeline.value = await fetchTimeline()
-    // 自动加载最近 3 个月的图片
-    const recent = timeline.value.slice(0, 3)
-    await Promise.all(recent.map(b => loadMonth(b.month)))
+    await Promise.all(timeline.value.map(b => loadMonth(b.month)))
   } finally {
     loading.value = false
   }
