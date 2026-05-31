@@ -55,9 +55,11 @@ async def get_month_assets(
     total_pages = max(1, (total + page_size - 1) // page_size)
     offset = (page - 1) * page_size
 
-    from app.routers.assets import _BRIEF_COLS, _row_to_brief
+    from app.services.query_builder import BRIEF_COLS
+    from app.routers.assets import _row_to_brief
+    cols = BRIEF_COLS.replace("a.", "")
     data_sql = f"""
-        SELECT {_BRIEF_COLS} FROM assets
+        SELECT {cols} FROM assets
         WHERE taken_at LIKE ? AND status = 'done'
         ORDER BY taken_at ASC
         LIMIT ? OFFSET ?
