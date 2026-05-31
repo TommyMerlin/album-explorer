@@ -9,6 +9,11 @@ const router = createRouter({
       component: () => import('../views/HomeView.vue'),
     },
     {
+      path: '/explore',
+      name: 'explore',
+      component: () => import('../views/ExplorePage.vue'),
+    },
+    {
       path: '/timeline',
       name: 'timeline',
       component: () => import('../views/TimelinePage.vue'),
@@ -35,8 +40,7 @@ const router = createRouter({
     },
     {
       path: '/search',
-      name: 'search',
-      component: () => import('../views/SearchPage.vue'),
+      redirect: to => ({ path: '/explore', query: to.query }),
     },
   ],
 })

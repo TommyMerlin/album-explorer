@@ -11,7 +11,7 @@
     <div class="flex items-center gap-3">
       <div class="relative">
         <input
-          v-model="filters.searchQuery"
+          v-model="searchInput"
           @keyup.enter="doSearch"
           type="search"
           placeholder="搜索描述、标签、场景..."
@@ -26,17 +26,18 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useFiltersStore } from '../../stores/filters'
 import { useUiStore } from '../../stores/ui'
 
-const filters = useFiltersStore()
 const ui = useUiStore()
 const router = useRouter()
+const searchInput = ref('')
 
 function doSearch() {
-  if (filters.searchQuery.trim()) {
-    router.push({ name: 'search', query: { q: filters.searchQuery } })
+  const q = searchInput.value.trim()
+  if (q) {
+    router.push({ path: '/explore', query: { q } })
   }
 }
 </script>

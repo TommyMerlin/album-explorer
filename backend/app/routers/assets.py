@@ -7,15 +7,9 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.database import get_db
 from app.models import AssetBrief, AssetDetail, PaginatedResponse
+from app.services.query_builder import BRIEF_COLS, QueryBuilder
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
-
-# 列表查询只取必要列，避免读取大字段 result_json
-_BRIEF_COLS = (
-    "asset_id, rel_path, asset_type, source_format, taken_at, "
-    "city_name, province_name, cluster_id, cluster_name, "
-    "caption_short, scene, tags_text, gps_lat, gps_lng"
-)
 
 
 def _row_to_brief(row: Any) -> AssetBrief:
@@ -75,46 +69,39 @@ def _row_to_detail(row: Any) -> AssetDetail:
 async def list_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    q: str | None = None,
     cluster_id: int | None = None,
     city: str | None = None,
+    province: str | None = None,
     month: str | None = None,
     tag: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    has_gps: bool | None = None,
     sort_by: str = Query("taken_at", pattern="^(taken_at|asset_id)$"),
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> PaginatedResponse:
     db = await get_db()
-    conditions = ["status = 'done'"]
-    params: list[Any] = []
+    qb = (
+        QueryBuilder()
+        .filter_text(q)
+        .filter_cluster(cluster_id)
+        .filter_city(city)
+        .filter_province(province)
+        .filter_month(month)
+        .filter_tag(tag)
+        .filter_date_range(date_from, date_to)
+        .filter_has_gps(has_gps)
+    )
 
-    if cluster_id is not None:
-        conditions.append("cluster_id = ?")
-        params.append(cluster_id)
-    if city:
-        conditions.append("city_name = ?")
-        params.append(city)
-    if month:
-        conditions.append("taken_at LIKE ?")
-        params.append(f"{month}%")
-    if tag:
-        conditions.append("tags_text LIKE ?")
-        params.append(f"%{tag}%")
-
-    where = " AND ".join(conditions)
-
-    count_sql = f"SELECT COUNT(*) FROM assets WHERE {where}"
-    cursor = await db.execute(count_sql, params)
+    count_sql, count_params = qb.build_count()
+    cursor = await db.execute(count_sql, count_params)
     total = (await cursor.fetchone())[0]
 
     total_pages = max(1, (total + page_size - 1) // page_size)
-    offset = (page - 1) * page_size
 
-    data_sql = (
-        f"SELECT {_BRIEF_COLS} FROM assets WHERE {where} "
-        f"ORDER BY {sort_by} IS NULL, {sort_by} {order} "
-        f"LIMIT ? OFFSET ?"
-    )
-    params.extend([page_size, offset])
-    cursor = await db.execute(data_sql, params)
+    data_sql, data_params = qb.build_select(sort_by, order, page, page_size)
+    cursor = await db.execute(data_sql, data_params)
     rows = await cursor.fetchall()
 
     items = [_row_to_brief(r) for r in rows]
