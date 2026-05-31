@@ -140,17 +140,18 @@ async def get_asset_context(asset_id: int):
     cols = BRIEF_COLS.replace("a.", "")
     context: dict = {}
 
-    # 同聚类
-    if row["cluster_id"] is not None:
+    # 同一天拍摄
+    if row["taken_at"]:
         cursor = await db.execute(
-            f"SELECT {cols} FROM assets WHERE status='done' AND cluster_id = ? AND asset_id != ? "
-            "ORDER BY taken_at DESC LIMIT 8",
-            [row["cluster_id"], asset_id],
+            f"SELECT {cols} FROM assets WHERE status='done' AND DATE(taken_at) = DATE(?) AND asset_id != ? "
+            "ORDER BY taken_at ASC LIMIT 8",
+            [row["taken_at"], asset_id],
         )
-        context["same_cluster"] = [_row_to_brief(r) for r in await cursor.fetchall()]
-        context["cluster_name"] = row["cluster_name"]
+        context["same_day"] = [_row_to_brief(r) for r in await cursor.fetchall()]
+        context["same_day_date"] = row["taken_at"][:10]
     else:
-        context["same_cluster"] = []
+        context["same_day"] = []
+        context["same_day_date"] = None
 
     # 共享标签最多的图片
     tags = (row["tags_text"] or "").split("|")

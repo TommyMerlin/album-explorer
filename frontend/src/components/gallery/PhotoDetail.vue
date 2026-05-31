@@ -110,11 +110,11 @@
                 />
               </div>
             </div>
-            <div v-if="context && context.same_cluster.length">
-              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">同主题「{{ context.cluster_name }}」</h4>
+            <div v-if="context && context.same_day.length">
+              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">同一天拍摄（{{ context.same_day_date }}）</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
-                  v-for="item in context.same_cluster.slice(0, 8)"
+                  v-for="item in context.same_day.slice(0, 8)"
                   :key="item.asset_id"
                   :src="thumbnailUrl(item.asset_id, 'sm')"
                   class="w-full aspect-square object-cover rounded cursor-pointer hover:opacity-80"
