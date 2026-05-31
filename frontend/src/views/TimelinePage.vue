@@ -77,7 +77,7 @@
       <span class="text-sm text-gray-600">已选择 {{ selectedIds.size }} 张</span>
       <div class="flex items-center gap-3">
         <button
-          @click="handleBatchAddToAlbum"
+          @click="showAlbumPicker = true"
           class="px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600"
         >添加到相册</button>
         <button
@@ -86,6 +86,12 @@
         >批量删除</button>
       </div>
     </div>
+
+    <AlbumPicker
+      :visible="showAlbumPicker"
+      @close="showAlbumPicker = false"
+      @select="handleAlbumSelected"
+    />
   </div>
 </template>
 
@@ -94,6 +100,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { fetchTimeline, fetchTimelineMonth, fetchAlbums, createAlbum, addAssetToAlbum, deleteAsset, thumbnailUrl, type TimelineBucket, type AssetBrief, type Album } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
+import AlbumPicker from '../components/AlbumPicker.vue'
 
 const timeline = ref<TimelineBucket[]>([])
 const loading = ref(true)
@@ -101,6 +108,7 @@ const expandedMonths = reactive(new Set<string>())
 const monthAssets = reactive<Record<string, AssetBrief[]>>({})
 const selectMode = ref(false)
 const selectedIds = reactive(new Set<number>())
+const showAlbumPicker = ref(false)
 const previewCount = 12
 
 function formatMonth(m: string): string {
@@ -139,21 +147,9 @@ function handleToggle(assetId: number) {
   }
 }
 
-async function handleBatchAddToAlbum() {
+async function handleAlbumSelected(albumId: number) {
+  showAlbumPicker.value = false
   if (selectedIds.size === 0) return
-  const albums = await fetchAlbums().catch(() => [])
-  const options = albums.map(a => `${a.id}: ${a.name}`).join('\n')
-  const input = prompt(`选择相册（输入编号）或输入新相册名称：\n${options}\n\n输入数字选择已有相册，或输入文字创建新相册：`)
-  if (!input) return
-
-  let albumId: number
-  const num = parseInt(input)
-  if (!isNaN(num) && albums.find(a => a.id === num)) {
-    albumId = num
-  } else {
-    const newAlbum = await createAlbum(input)
-    albumId = newAlbum.id
-  }
 
   let added = 0
   for (const assetId of selectedIds) {

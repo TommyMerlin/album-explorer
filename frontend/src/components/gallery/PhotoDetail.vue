@@ -120,22 +120,9 @@
             <p class="text-xs text-gray-400 break-all mb-3">{{ detail.rel_path }}</p>
             <div class="space-y-2">
               <button
-                @click="showAlbumPicker = !showAlbumPicker"
+                @click="showAlbumPicker = true"
                 class="w-full px-3 py-1.5 text-sm text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
               >添加到相册</button>
-              <div v-if="showAlbumPicker" class="border border-gray-200 rounded-lg p-2 space-y-1">
-                <div v-if="!albumList.length" class="text-xs text-gray-400 text-center py-2">暂无相册</div>
-                <button
-                  v-for="a in albumList"
-                  :key="a.id"
-                  @click="handleAddToAlbum(a.id)"
-                  class="w-full text-left px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                >{{ a.name }}</button>
-                <button
-                  @click="handleCreateAndAdd"
-                  class="w-full text-left px-2 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded"
-                >+ 新建相册</button>
-              </div>
               <button
                 @click="handleDelete"
                 class="w-full px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
@@ -146,12 +133,18 @@
       </div>
     </div>
   </Teleport>
+  <AlbumPicker
+    :visible="showAlbumPicker"
+    @close="showAlbumPicker = false"
+    @select="handleAlbumSelected"
+  />
 </template>
 
 <script setup lang="ts">
 import { watch, ref } from 'vue'
 import { useUiStore } from '../../stores/ui'
-import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, fetchAlbums, createAlbum, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief, type Album } from '../../api'
+import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
+import AlbumPicker from '../AlbumPicker.vue'
 
 const emit = defineEmits<{ deleted: [assetId: number] }>()
 
@@ -160,9 +153,8 @@ const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
 const similar = ref<AssetBrief[]>([])
 const showAlbumPicker = ref(false)
-const albumList = ref<Album[]>([])
 
-async function handleAddToAlbum(albumId: number) {
+async function handleAlbumSelected(albumId: number) {
   if (!detail.value) return
   try {
     await addAssetToAlbum(albumId, detail.value.asset_id)
@@ -171,16 +163,6 @@ async function handleAddToAlbum(albumId: number) {
   } catch (e: any) {
     alert(e?.response?.data?.detail || '添加失败')
   }
-}
-
-async function handleCreateAndAdd() {
-  const name = prompt('新相册名称：')
-  if (!name || !detail.value) return
-  const album = await createAlbum(name)
-  await addAssetToAlbum(album.id, detail.value.asset_id)
-  showAlbumPicker.value = false
-  albumList.value = await fetchAlbums()
-  alert('已创建相册并添加')
 }
 
 async function handleDelete() {
@@ -203,16 +185,14 @@ watch(() => ui.detailAssetId, async (id) => {
     context.value = null
     similar.value = []
     showAlbumPicker.value = false
-    const [d, c, s, albums] = await Promise.all([
+    const [d, c, s] = await Promise.all([
       fetchAssetDetail(id),
       fetchAssetContext(id),
       fetchSimilarAssets(id, 8).catch(() => []),
-      fetchAlbums().catch(() => []),
     ])
     detail.value = d
     context.value = c
     similar.value = s
-    albumList.value = albums
   }
 })
 </script>
