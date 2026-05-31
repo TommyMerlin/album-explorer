@@ -46,15 +46,37 @@ class Settings:
         self.thumb_quality_md = 80
 
     def _sync_db(self) -> None:
-        """如果源 DB 比缓存新，则复制一份到本地文件系统。"""
+        """如果源 DB 比缓存新，则复制一份到本地文件系统。
+        如果拷贝后校验失败，回退到直接使用源数据库。"""
         if not self.db_source.exists():
             return
         if self.db_path.exists():
             src_mtime = self.db_source.stat().st_mtime
             dst_mtime = self.db_path.stat().st_mtime
             if src_mtime <= dst_mtime:
-                return
-        shutil.copy2(str(self.db_source), str(self.db_path))
+                # 验证缓存完整性
+                import sqlite3
+                try:
+                    conn = sqlite3.connect(str(self.db_path))
+                    result = conn.execute("PRAGMA quick_check").fetchone()
+                    conn.close()
+                    if result and result[0] == "ok":
+                        return
+                except Exception:
+                    pass
+                # 缓存损坏，删除后重新拷贝
+        try:
+            shutil.copy2(str(self.db_source), str(self.db_path))
+            # 验证拷贝结果
+            import sqlite3
+            conn = sqlite3.connect(str(self.db_path))
+            result = conn.execute("PRAGMA quick_check").fetchone()
+            conn.close()
+            if not result or result[0] != "ok":
+                raise RuntimeError("copy corrupted")
+        except Exception:
+            # 拷贝失败或损坏，直接使用源数据库
+            self.db_path = self.db_source
 
 
 settings = Settings()

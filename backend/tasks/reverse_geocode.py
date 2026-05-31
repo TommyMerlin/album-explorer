@@ -1,4 +1,4 @@
-"""批量 GPS 反查城市名。
+"""批量 GPS 反查城市名（基于地级市 Shapefile 点在面查询）。
 
 用法：
     python -m tasks.reverse_geocode
@@ -9,30 +9,46 @@ import sqlite3
 import sys
 from pathlib import Path
 
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import Point
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.config import settings
 
-# 中国省份英文->中文映射
-PROVINCE_ZH = {
-    "Anhui": "安徽", "Beijing": "北京", "Chongqing": "重庆", "Fujian": "福建",
-    "Gansu": "甘肃", "Guangdong": "广东", "Guangxi": "广西", "Guizhou": "贵州",
-    "Hainan": "海南", "Hebei": "河北", "Heilongjiang": "黑龙江", "Henan": "河南",
-    "Hubei": "湖北", "Hunan": "湖南", "Inner Mongolia": "内蒙古",
-    "Jiangsu": "江苏", "Jiangxi": "江西", "Jilin": "吉林", "Liaoning": "辽宁",
-    "Ningxia": "宁夏", "Qinghai": "青海", "Shaanxi": "陕西", "Shandong": "山东",
-    "Shanghai": "上海", "Shanxi": "山西", "Sichuan": "四川", "Tianjin": "天津",
-    "Tibet": "西藏", "Xinjiang": "新疆", "Yunnan": "云南", "Zhejiang": "浙江",
-    "Hong Kong": "香港", "Macau": "澳门", "Taiwan": "台湾",
-}
+CITY_SHP = Path(__file__).resolve().parents[2] / "data" / "china_shp" / "3. City" / "city.shp"
+
+MUNICIPALITY_NAMES = {"北京市": "北京", "上海市": "上海", "天津市": "天津", "重庆市": "重庆"}
+
+
+def normalize_city(ct_name: str, pr_name: str) -> tuple[str, str]:
+    """标准化城市名和省份名。"""
+    province = pr_name.rstrip("省市壮族回族维吾尔自治区特别行政区")
+    if pr_name in MUNICIPALITY_NAMES:
+        province = MUNICIPALITY_NAMES[pr_name]
+        return province, province
+    city = ct_name.rstrip("市地区盟")
+    if "自治州" in ct_name:
+        city = ct_name
+    return city, province
 
 
 def main() -> None:
-    import reverse_geocoder as rg
+    if not CITY_SHP.exists():
+        print(f"错误：找不到 Shapefile: {CITY_SHP}")
+        print("请先运行: git clone --depth 1 https://github.com/GaryBikini/ChinaAdminDivisonSHP.git data/china_shp")
+        sys.exit(1)
 
-    conn = sqlite3.connect(str(settings.db_path))
+    # 直接操作源数据库，避免跨文件系统拷贝损坏
+    db_path = settings.db_source if settings.db_source.exists() else settings.db_path
+    print(f"使用数据库: {db_path}")
+
+    print("加载地级市 Shapefile...")
+    city_gdf = gpd.read_file(str(CITY_SHP))
+
+    conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
 
-    # 确保列存在
     try:
         conn.execute("ALTER TABLE assets ADD COLUMN city_name TEXT")
     except Exception:
@@ -47,7 +63,8 @@ def main() -> None:
         pass
 
     rows = conn.execute(
-        "SELECT asset_id, gps_lat, gps_lng FROM assets WHERE gps_lat IS NOT NULL AND gps_lng IS NOT NULL AND status = 'done'"
+        "SELECT asset_id, gps_lat, gps_lng FROM assets "
+        "WHERE gps_lat IS NOT NULL AND gps_lng IS NOT NULL AND status = 'done'"
     ).fetchall()
 
     print(f"共 {len(rows)} 张图片需要反查地理信息")
@@ -57,25 +74,31 @@ def main() -> None:
         conn.close()
         return
 
-    coordinates = [(r["gps_lat"], r["gps_lng"]) for r in rows]
+    print("构建 GeoDataFrame...")
+    points = [Point(r["gps_lng"], r["gps_lat"]) for r in rows]
     asset_ids = [r["asset_id"] for r in rows]
+    points_gdf = gpd.GeoDataFrame(
+        {"asset_id": asset_ids},
+        geometry=points,
+        crs="EPSG:4326",
+    )
 
-    print("正在批量反查（使用 KD-Tree，速度很快）...")
-    results = rg.search(coordinates)
+    print("执行空间连接（点在面查询）...")
+    joined = gpd.sjoin(points_gdf, city_gdf, how="left", predicate="within")
 
     print("写入数据库...")
     updates = []
-    for asset_id, geo in zip(asset_ids, results):
-        city = geo.get("name", "")
-        admin1 = geo.get("admin1", "")
-        cc = geo.get("cc", "")
+    for _, row in joined.iterrows():
+        ct_name = row.get("ct_name")
+        pr_name = row.get("pr_name")
+        asset_id = row["asset_id"]
 
-        # 中国地区尝试翻译省份名
-        province = PROVINCE_ZH.get(admin1, admin1) if cc == "CN" else admin1
+        if pd.isna(ct_name) or not ct_name:
+            updates.append((None, None, asset_id))
+        else:
+            city, province = normalize_city(ct_name, pr_name)
+            updates.append((city, province, asset_id))
 
-        updates.append((city, province, asset_id))
-
-    # 批量更新
     conn.executemany(
         "UPDATE assets SET city_name = ?, province_name = ? WHERE asset_id = ?",
         updates,
@@ -83,7 +106,8 @@ def main() -> None:
     conn.commit()
     conn.close()
 
-    print(f"完成！已更新 {len(updates)} 条记录。")
+    matched = sum(1 for u in updates if u[0] is not None)
+    print(f"完成！已更新 {len(updates)} 条记录，其中 {matched} 条匹配到城市，{len(updates) - matched} 条未匹配（可能在国外或边界外）。")
 
 
 if __name__ == "__main__":
