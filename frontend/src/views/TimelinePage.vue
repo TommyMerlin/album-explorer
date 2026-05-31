@@ -126,7 +126,7 @@ function formatMonth(m: string): string {
 function displayItems(month: string) {
   const items = monthAssets[month] || []
   if (expandedMonths.has(month)) return items
-  return items.slice(0, previewCount)
+  return items.slice(0, previewCount.value)
 }
 
 async function loadMonth(month: string) {
