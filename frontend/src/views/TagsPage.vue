@@ -1,9 +1,9 @@
 <template>
   <div class="h-[calc(100vh-57px-48px)] flex flex-col">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-800">标签图谱</h2>
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">标签图谱</h2>
       <div class="flex items-center gap-3">
-        <label class="text-sm text-gray-500">最小共现：</label>
+        <label class="text-sm text-gray-500 dark:text-gray-400">最小共现：</label>
         <input
           v-model.number="minWeight"
           type="range"
@@ -12,11 +12,11 @@
           class="w-32"
           @change="loadGraph"
         />
-        <span class="text-sm text-gray-600 w-6">{{ minWeight }}</span>
+        <span class="text-sm text-gray-600 dark:text-gray-300 w-6">{{ minWeight }}</span>
       </div>
     </div>
-    <div class="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-white relative">
-      <div v-if="loading" class="absolute inset-0 flex justify-center items-center bg-white/80 z-10">
+    <div class="flex-1 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative">
+      <div v-if="loading" class="absolute inset-0 flex justify-center items-center bg-white/80 dark:bg-gray-800/80 z-10">
         <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
       </div>
       <svg ref="svgRef" :width="svgWidth" :height="svgHeight" class="block"></svg>
@@ -28,9 +28,11 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchTagGraph, type TagGraph } from '../api'
+import { useUiStore } from '../stores/ui'
 import * as d3 from 'd3'
 
 const router = useRouter()
+const ui = useUiStore()
 const svgRef = ref<SVGSVGElement | null>(null)
 const loading = ref(true)
 const minWeight = ref(10)
@@ -101,7 +103,7 @@ function renderGraph(graph: TagGraph) {
     .selectAll('line')
     .data(links)
     .join('line')
-    .attr('stroke', '#e5e7eb')
+    .attr('stroke', ui.dark ? '#4b5563' : '#e5e7eb')
     .attr('stroke-width', (d: any) => linkScale(d.weight))
 
   const node = g.append('g')
@@ -141,7 +143,7 @@ function renderGraph(graph: TagGraph) {
     .attr('font-size', (d: any) => Math.max(9, Math.min(14, nodeScale(d.count))))
     .attr('text-anchor', 'middle')
     .attr('dy', (d: any) => nodeScale(d.count) + 12)
-    .attr('fill', '#374151')
+    .attr('fill', ui.dark ? '#e5e7eb' : '#374151')
 
   const linkElements = g.selectAll('line')
 

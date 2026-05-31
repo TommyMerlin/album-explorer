@@ -7,7 +7,7 @@
         @keydown.enter="onSearch"
         type="text"
         placeholder="搜索图片..."
-        class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:border-primary-400"
+        class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm w-64 focus:outline-none focus:border-primary-400"
       />
       <button
         @click="onSearch"
@@ -18,7 +18,7 @@
       <span
         v-for="(value, key) in filterTags"
         :key="key"
-        class="inline-flex items-center gap-1 px-2 py-1 bg-primary-50 border border-primary-200 rounded-full text-xs text-primary-700"
+        class="inline-flex items-center gap-1 px-2 py-1 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-full text-xs text-primary-700 dark:text-primary-300"
       >
         {{ value }}
         <button @click="removeFilter(key as string)" class="hover:text-primary-900">&times;</button>
@@ -37,9 +37,9 @@
         <button
           v-if="filters.hasFilters"
           @click="saveSearch"
-          class="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50"
+          class="text-xs px-2 py-1 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
         >保存搜索</button>
-        <select v-model="sortOption" @change="onSortChange" class="text-sm border border-gray-200 rounded px-2 py-1">
+        <select v-model="sortOption" @change="onSortChange" class="text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1">
           <option value="taken_at:desc">时间倒序</option>
           <option value="taken_at:asc">时间正序</option>
         </select>
@@ -64,13 +64,13 @@
         <button
           @click="goPage(page - 1)"
           :disabled="page <= 1"
-          class="px-3 py-1.5 border border-gray-200 rounded text-sm disabled:opacity-30"
+          class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:text-gray-300 rounded text-sm disabled:opacity-30"
         >上一页</button>
-        <span class="text-sm text-gray-500">{{ page }} / {{ totalPages }}</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">{{ page }} / {{ totalPages }}</span>
         <button
           @click="goPage(page + 1)"
           :disabled="page >= totalPages"
-          class="px-3 py-1.5 border border-gray-200 rounded text-sm disabled:opacity-30"
+          class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:text-gray-300 rounded text-sm disabled:opacity-30"
         >下一页</button>
       </div>
     </template>

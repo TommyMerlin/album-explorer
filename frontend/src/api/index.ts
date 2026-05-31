@@ -214,6 +214,22 @@ export async function fetchRecommendations() {
   return res.data
 }
 
+export async function fetchRandomPicks(limit = 12) {
+  const res = await api.get<AssetBrief[]>('/recommendations/random', { params: { limit } })
+  return res.data
+}
+
+export interface ClusterPick {
+  name: string | null
+  cluster_id: number | null
+  items: AssetBrief[]
+}
+
+export async function fetchClusterPick(limit = 12) {
+  const res = await api.get<ClusterPick>('/recommendations/cluster', { params: { limit } })
+  return res.data
+}
+
 export interface SavedSearch {
   id: number
   name: string
@@ -281,6 +297,11 @@ export async function addAssetToAlbum(albumId: number, assetId: number) {
 
 export async function removeAssetFromAlbum(albumId: number, assetId: number) {
   await api.delete(`/albums/${albumId}/assets/${assetId}`)
+}
+
+export async function setClusterCover(clusterId: number, assetId: number | null) {
+  const res = await api.patch(`/clusters/${clusterId}`, { representative_asset_id: assetId })
+  return res.data
 }
 
 export default api

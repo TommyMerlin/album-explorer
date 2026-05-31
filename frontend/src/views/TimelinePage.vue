@@ -1,17 +1,17 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-800">时间线</h2>
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">时间线</h2>
       <div class="flex items-center gap-2">
         <button
           @click="toggleSelectMode"
           class="px-3 py-1.5 text-sm border rounded-lg transition-colors"
-          :class="selectMode ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+          :class="selectMode ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'"
         >{{ selectMode ? '选择中' : '多选' }}</button>
         <button
           v-if="selectMode"
           @click="cancelSelect"
-          class="px-3 py-1.5 text-sm border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50"
+          class="px-3 py-1.5 text-sm border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
         >取消</button>
       </div>
     </div>
@@ -22,7 +22,7 @@
       <div v-for="bucket in timeline" :key="bucket.month" class="mb-8">
         <div class="flex items-center gap-3 mb-3">
           <h3
-            class="text-base font-medium text-gray-700 cursor-pointer hover:text-primary-600"
+            class="text-base font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-primary-600"
             @click="loadMonth(bucket.month)"
           >{{ formatMonth(bucket.month) }}</h3>
           <span class="text-sm text-gray-400">{{ bucket.count }} 张</span>
@@ -39,17 +39,21 @@
             :selected-ids="selectedIds"
             @toggle="handleToggle"
           />
-          <div v-if="!expandedMonths.has(bucket.month) && monthAssets[bucket.month].length > previewCount" class="mt-2">
+          <div class="mt-2 flex items-center gap-3">
             <button
+              v-if="!expandedMonths.has(bucket.month) && monthAssets[bucket.month].length > previewCount"
               @click="expandedMonths.add(bucket.month)"
               class="text-sm text-primary-500 hover:text-primary-700"
             >展开全部（{{ monthAssets[bucket.month].length }} 张）</button>
-          </div>
-          <div v-if="expandedMonths.has(bucket.month) && monthAssets[bucket.month].length > previewCount" class="mt-2">
             <button
+              v-if="expandedMonths.has(bucket.month) && monthAssets[bucket.month].length > previewCount"
               @click="expandedMonths.delete(bucket.month)"
-              class="text-sm text-gray-400 hover:text-gray-600"
+              class="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
             >收起</button>
+            <button
+              @click="collapseMonth(bucket.month)"
+              class="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >折叠</button>
           </div>
         </template>
         <!-- 未加载的月份显示代表图 + 加载按钮 -->
@@ -72,9 +76,9 @@
     <!-- 底部操作栏 -->
     <div
       v-if="selectMode && selectedIds.size > 0"
-      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between z-[9999]"
+      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between z-[9999]"
     >
-      <span class="text-sm text-gray-600">已选择 {{ selectedIds.size }} 张</span>
+      <span class="text-sm text-gray-600 dark:text-gray-300">已选择 {{ selectedIds.size }} 张</span>
       <div class="flex items-center gap-3">
         <button
           @click="showAlbumPicker = true"
@@ -96,11 +100,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { fetchTimeline, fetchTimelineMonth, fetchAlbums, createAlbum, addAssetToAlbum, deleteAsset, thumbnailUrl, type TimelineBucket, type AssetBrief, type Album } from '../api'
+import { useUiStore } from '../stores/ui'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 import AlbumPicker from '../components/AlbumPicker.vue'
+
+const ui = useUiStore()
 
 const timeline = ref<TimelineBucket[]>([])
 const loading = ref(true)
@@ -109,7 +116,7 @@ const monthAssets = reactive<Record<string, AssetBrief[]>>({})
 const selectMode = ref(false)
 const selectedIds = reactive(new Set<number>())
 const showAlbumPicker = ref(false)
-const previewCount = 12
+const previewCount = computed(() => ui.gridColumns * 2)
 
 function formatMonth(m: string): string {
   const [year, month] = m.split('-')
@@ -145,6 +152,11 @@ function handleToggle(assetId: number) {
   } else {
     selectedIds.add(assetId)
   }
+}
+
+function collapseMonth(month: string) {
+  delete monthAssets[month]
+  expandedMonths.delete(month)
 }
 
 async function handleAlbumSelected(albumId: number) {

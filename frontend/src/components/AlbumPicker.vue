@@ -5,9 +5,9 @@
       class="fixed inset-0 z-[10001] flex items-center justify-center bg-black/50"
       @click.self="emit('close')"
     >
-      <div class="bg-white rounded-xl w-80 max-h-[60vh] overflow-hidden shadow-xl">
-        <div class="p-4 border-b border-gray-100">
-          <h3 class="text-base font-medium text-gray-800">添加到相册</h3>
+      <div class="bg-white dark:bg-gray-800 rounded-xl w-80 max-h-[60vh] overflow-hidden shadow-xl">
+        <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+          <h3 class="text-base font-medium text-gray-800 dark:text-gray-100">添加到相册</h3>
           <p class="text-xs text-gray-400 mt-1">选择已有相册或创建新相册</p>
         </div>
         <div class="max-h-[40vh] overflow-y-auto">
@@ -15,7 +15,7 @@
             v-for="album in albums"
             :key="album.id"
             @click="selectAlbum(album.id)"
-            class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 flex items-center gap-3"
+            class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 flex items-center gap-3"
           >
             <img
               v-if="album.cover_asset_id"
@@ -28,7 +28,7 @@
               </svg>
             </div>
             <div>
-              <p class="text-sm text-gray-800">{{ album.name }}</p>
+              <p class="text-sm text-gray-800 dark:text-gray-100">{{ album.name }}</p>
               <p class="text-xs text-gray-400">{{ album.asset_count }} 张</p>
             </div>
           </button>
@@ -36,13 +36,13 @@
             暂无相册
           </div>
         </div>
-        <div class="p-3 border-t border-gray-100">
+        <div class="p-3 border-t border-gray-100 dark:border-gray-700">
           <div class="flex gap-2">
             <input
               v-model="newName"
               @keydown.enter="createNew"
               placeholder="输入新相册名称..."
-              class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-400"
+              class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:border-primary-400"
             />
             <button
               @click="createNew"

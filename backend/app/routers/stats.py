@@ -93,3 +93,37 @@ async def get_recommendations():
             "items": cluster_items,
         },
     }
+
+
+@router.get("/recommendations/random")
+async def get_random_picks(limit: int = 12):
+    """独立刷新随机精选。"""
+    db = await get_db()
+    cols = BRIEF_COLS.replace("a.", "")
+    cursor = await db.execute(
+        f"SELECT {cols} FROM assets WHERE status='done' ORDER BY RANDOM() LIMIT ?",
+        [limit],
+    )
+    return [_row_to_brief(r) for r in await cursor.fetchall()]
+
+
+@router.get("/recommendations/cluster")
+async def get_cluster_pick(limit: int = 12):
+    """独立刷新主题推荐。"""
+    db = await get_db()
+    cols = BRIEF_COLS.replace("a.", "")
+    cursor = await db.execute(
+        "SELECT cluster_id, cluster_name FROM clusters ORDER BY RANDOM() LIMIT 1"
+    )
+    cluster_row = await cursor.fetchone()
+    if not cluster_row:
+        return {"name": None, "cluster_id": None, "items": []}
+    cursor = await db.execute(
+        f"SELECT {cols} FROM assets WHERE status='done' AND cluster_id=? ORDER BY RANDOM() LIMIT ?",
+        [cluster_row["cluster_id"], limit],
+    )
+    return {
+        "name": cluster_row["cluster_name"],
+        "cluster_id": cluster_row["cluster_id"],
+        "items": [_row_to_brief(r) for r in await cursor.fetchall()],
+    }

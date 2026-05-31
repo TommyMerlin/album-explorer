@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-800">我的相册</h2>
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">我的相册</h2>
       <button
         @click="handleCreate"
         class="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600"
@@ -18,7 +18,7 @@
         v-for="album in albums"
         :key="album.id"
         :to="`/albums/${album.id}`"
-        class="group bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+        class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
       >
         <div class="aspect-[4/3] bg-gray-100 overflow-hidden">
           <img
@@ -33,7 +33,7 @@
           </div>
         </div>
         <div class="p-3">
-          <h3 class="text-sm font-medium text-gray-800 line-clamp-1">{{ album.name }}</h3>
+          <h3 class="text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ album.name }}</h3>
           <p class="text-xs text-gray-400 mt-1">{{ album.asset_count }} 张</p>
         </div>
       </router-link>

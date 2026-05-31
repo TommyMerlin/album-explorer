@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+  <div class="grid gap-2" :style="{ gridTemplateColumns: `repeat(${ui.gridColumns}, minmax(0, 1fr))` }">
     <div
       v-for="asset in items"
       :key="asset.asset_id"
@@ -74,7 +74,8 @@ function handleClick(asset: AssetBrief) {
   if (props.selectable) {
     emit('toggle', asset.asset_id)
   } else {
-    ui.openDetail(asset.asset_id)
+    const ids = props.items.map(i => i.asset_id)
+    ui.openDetail(asset.asset_id, ids)
   }
 }
 </script>

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models import ClusterInfo, PaginatedResponse
 
 router = APIRouter(prefix="/api/clusters", tags=["clusters"])
+
+
+class ClusterCoverUpdate(BaseModel):
+    representative_asset_id: int | None = None
 
 
 @router.get("")
@@ -93,6 +98,30 @@ async def get_cluster_assets(
     return PaginatedResponse(
         items=items, total=total, page=page, page_size=page_size, total_pages=total_pages
     )
+
+
+@router.patch("/{cluster_id}")
+async def update_cluster_cover(cluster_id: int, body: ClusterCoverUpdate):
+    """设置/取消聚类封面图。"""
+    db = await get_db()
+    cursor = await db.execute("SELECT cluster_id FROM clusters WHERE cluster_id = ?", [cluster_id])
+    if not await cursor.fetchone():
+        raise HTTPException(status_code=404, detail="聚类不存在")
+
+    if body.representative_asset_id is not None:
+        cursor = await db.execute(
+            "SELECT asset_id FROM assets WHERE asset_id = ? AND cluster_id = ? AND status = 'done'",
+            [body.representative_asset_id, cluster_id],
+        )
+        if not await cursor.fetchone():
+            raise HTTPException(status_code=400, detail="该图片不属于此聚类")
+
+    await db.execute(
+        "UPDATE clusters SET representative_asset_id = ? WHERE cluster_id = ?",
+        [body.representative_asset_id, cluster_id],
+    )
+    await db.commit()
+    return {"ok": True}
 
 
 @router.get("/{cluster_id}/detail")

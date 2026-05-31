@@ -1,7 +1,7 @@
 <template>
   <aside
     :class="[
-      'sticky top-[57px] h-[calc(100vh-57px)] bg-white border-r border-gray-200 transition-all duration-200 overflow-y-auto',
+      'sticky top-[57px] h-[calc(100vh-57px)] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-200 overflow-y-auto',
       ui.sidebarCollapsed ? 'w-16' : 'w-56'
     ]"
   >
@@ -10,8 +10,8 @@
         v-for="item in navItems"
         :key="item.path"
         :to="item.path"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-        active-class="bg-primary-50 text-primary-700 font-medium"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        active-class="bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium"
       >
         <span v-html="item.icon" class="w-5 h-5 flex-shrink-0"></span>
         <span v-if="!ui.sidebarCollapsed">{{ item.label }}</span>

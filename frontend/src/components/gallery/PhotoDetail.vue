@@ -5,9 +5,19 @@
       class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70"
       @click.self="ui.closeDetail()"
     >
-      <div class="relative bg-white rounded-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden flex">
+      <div class="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden flex">
         <!-- 图片区域 -->
-        <div class="flex-1 bg-gray-900 flex items-center justify-center min-h-[400px]">
+        <div class="flex-1 bg-gray-900 flex items-center justify-center min-h-[400px] relative">
+          <!-- 左箭头 -->
+          <button
+            v-if="ui.hasPrev"
+            @click="ui.navigatePrev()"
+            class="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white z-10 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
           <img
             v-if="detail"
             :src="fullImageUrl(detail.asset_id)"
@@ -15,16 +25,26 @@
             class="max-w-full max-h-[85vh] object-contain"
           />
           <div v-else class="text-white">加载中...</div>
+          <!-- 右箭头 -->
+          <button
+            v-if="ui.hasNext"
+            @click="ui.navigateNext()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white z-10 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
         </div>
         <!-- 信息面板 -->
-        <div v-if="detail" class="w-80 p-5 overflow-y-auto border-l border-gray-200">
-          <button @click="ui.closeDetail()" class="absolute top-3 right-3 p-1 hover:bg-gray-100 rounded-full">
+        <div v-if="detail" class="w-80 p-5 overflow-y-auto border-l border-gray-200 dark:border-gray-700">
+          <button @click="ui.closeDetail()" class="absolute top-3 right-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-600 dark:text-gray-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h3 class="text-base font-medium mb-3">{{ detail.caption_short }}</h3>
-          <p class="text-sm text-gray-600 mb-4">{{ detail.caption_long }}</p>
+          <h3 class="text-base font-medium text-gray-800 dark:text-gray-100 mb-3">{{ detail.caption_short }}</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ detail.caption_long }}</p>
 
           <div class="space-y-3 text-sm">
             <div v-if="detail.taken_at" class="flex items-center gap-2 text-gray-500">
@@ -60,7 +80,7 @@
                 v-for="tag in detail.tags"
                 :key="tag"
                 :to="{ path: '/explore', query: { tag } }"
-                class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-primary-50 hover:text-primary-700"
+                class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-700 dark:hover:text-primary-300"
                 @click="ui.closeDetail()"
               >{{ tag }}</router-link>
             </div>
@@ -141,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { watch, ref, onMounted, onUnmounted } from 'vue'
 import { useUiStore } from '../../stores/ui'
 import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
 import AlbumPicker from '../AlbumPicker.vue'
@@ -153,6 +173,28 @@ const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
 const similar = ref<AssetBrief[]>([])
 const showAlbumPicker = ref(false)
+
+function handleKeydown(e: KeyboardEvent) {
+  if (!ui.detailModalOpen) return
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    ui.navigatePrev()
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    ui.navigateNext()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    ui.closeDetail()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 async function handleAlbumSelected(albumId: number) {
   if (!detail.value) return
