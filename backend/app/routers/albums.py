@@ -28,7 +28,8 @@ class AlbumAssetAdd(BaseModel):
     asset_id: int
 
 
-async def _ensure_tables():
+async def ensure_album_tables():
+    """应用启动时调用一次，确保相册表存在。"""
     db = await get_db()
     await db.execute("""
         CREATE TABLE IF NOT EXISTS albums (
@@ -49,12 +50,14 @@ async def _ensure_tables():
             PRIMARY KEY (album_id, asset_id)
         )
     """)
+    await db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_album_assets_asset ON album_assets(asset_id)"
+    )
     await db.commit()
 
 
 @router.get("")
 async def list_albums():
-    await _ensure_tables()
     db = await get_db()
     cursor = await db.execute("""
         SELECT a.*, COUNT(aa.asset_id) AS asset_count
@@ -80,7 +83,6 @@ async def list_albums():
 
 @router.post("", status_code=201)
 async def create_album(body: AlbumCreate):
-    await _ensure_tables()
     db = await get_db()
     now = datetime.now().isoformat()
     cursor = await db.execute(
@@ -93,7 +95,6 @@ async def create_album(body: AlbumCreate):
 
 @router.get("/{album_id}")
 async def get_album(album_id: int):
-    await _ensure_tables()
     db = await get_db()
     cursor = await db.execute("SELECT * FROM albums WHERE id = ?", [album_id])
     album = await cursor.fetchone()
@@ -124,7 +125,6 @@ async def get_album(album_id: int):
 
 @router.patch("/{album_id}")
 async def update_album(album_id: int, body: AlbumUpdate):
-    await _ensure_tables()
     db = await get_db()
     cursor = await db.execute("SELECT * FROM albums WHERE id = ?", [album_id])
     album = await cursor.fetchone()
@@ -146,7 +146,6 @@ async def update_album(album_id: int, body: AlbumUpdate):
 
 @router.delete("/{album_id}", status_code=204)
 async def delete_album(album_id: int):
-    await _ensure_tables()
     db = await get_db()
     cursor = await db.execute("SELECT id FROM albums WHERE id = ?", [album_id])
     if await cursor.fetchone() is None:
@@ -158,7 +157,6 @@ async def delete_album(album_id: int):
 
 @router.post("/{album_id}/assets", status_code=201)
 async def add_asset_to_album(album_id: int, body: AlbumAssetAdd):
-    await _ensure_tables()
     db = await get_db()
     cursor = await db.execute("SELECT id FROM albums WHERE id = ?", [album_id])
     if await cursor.fetchone() is None:
@@ -185,7 +183,6 @@ async def add_asset_to_album(album_id: int, body: AlbumAssetAdd):
 
 @router.delete("/{album_id}/assets/{asset_id}", status_code=204)
 async def remove_asset_from_album(album_id: int, asset_id: int):
-    await _ensure_tables()
     db = await get_db()
     cursor = await db.execute(
         "SELECT rowid FROM album_assets WHERE album_id = ? AND asset_id = ?",

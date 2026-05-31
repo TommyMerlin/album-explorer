@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { searchAssets, type AssetBrief } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
@@ -72,8 +72,4 @@ async function loadMore() {
 watch(() => route.query.q, (q) => {
   if (q) doSearch(q as string)
 }, { immediate: true })
-
-onMounted(() => {
-  if (route.query.q) doSearch(route.query.q as string)
-})
 </script>

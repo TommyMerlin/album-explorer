@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { fetchTimeline, fetchTimelineMonth, fetchAlbums, createAlbum, addAssetToAlbum, deleteAsset, thumbnailUrl, type TimelineBucket, type AssetBrief, type Album } from '../api'
+import { fetchTimeline, fetchTimelineMonth, addAssetToAlbum, deleteAsset, thumbnailUrl, type TimelineBucket, type AssetBrief } from '../api'
 import { useUiStore } from '../stores/ui'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
@@ -169,14 +169,16 @@ async function handleAlbumSelected(albumId: number) {
   showAlbumPicker.value = false
   if (selectedIds.size === 0) return
 
-  let added = 0
-  for (const assetId of selectedIds) {
-    try {
-      await addAssetToAlbum(albumId, assetId)
-      added++
-    } catch {}
+  const results = await Promise.allSettled(
+    [...selectedIds].map(assetId => addAssetToAlbum(albumId, assetId))
+  )
+  const added = results.filter(r => r.status === 'fulfilled').length
+  const failed = results.filter(r => r.status === 'rejected').length
+  if (failed > 0) {
+    alert(`已添加 ${added} 张图片到相册，${failed} 张失败（可能已在相册中）`)
+  } else {
+    alert(`已添加 ${added} 张图片到相册`)
   }
-  alert(`已添加 ${added} 张图片到相册`)
   selectMode.value = false
   selectedIds.clear()
 }
@@ -184,17 +186,26 @@ async function handleAlbumSelected(albumId: number) {
 async function handleBatchDelete() {
   if (selectedIds.size === 0) return
   if (!window.confirm(`确定要删除选中的 ${selectedIds.size} 张图片吗？\n原图将移到回收站。`)) return
+
+  const ids = [...selectedIds]
+  const results = await Promise.allSettled(
+    ids.map(assetId => deleteAsset(assetId))
+  )
   let deleted = 0
-  for (const assetId of selectedIds) {
-    try {
-      await deleteAsset(assetId)
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
       deleted++
       for (const month in monthAssets) {
-        monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== assetId)
+        monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== ids[i])
       }
-    } catch {}
+    }
+  })
+  const failed = ids.length - deleted
+  if (failed > 0) {
+    alert(`已删除 ${deleted} 张图片，${failed} 张失败`)
+  } else {
+    alert(`已删除 ${deleted} 张图片`)
   }
-  alert(`已删除 ${deleted} 张图片`)
   selectMode.value = false
   selectedIds.clear()
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -155,8 +156,13 @@ async def get_asset_context(asset_id: int):
     tags = (row["tags_text"] or "").split("|")
     tags = [t for t in tags if t]
     if tags:
-        tag_conditions = " OR ".join(["tags_text LIKE ?" for _ in tags[:5]])
-        tag_params = [f"%{t}%" for t in tags[:5]]
+        tag_conditions = " OR ".join([
+            "(tags_text = ? OR tags_text LIKE ? OR tags_text LIKE ? OR tags_text LIKE ?)"
+            for _ in tags[:5]
+        ])
+        tag_params = []
+        for t in tags[:5]:
+            tag_params.extend([t, f"{t}|%", f"%|{t}|%", f"%|{t}"])
         cursor = await db.execute(
             f"SELECT {cols} FROM assets WHERE status='done' AND asset_id != ? AND ({tag_conditions}) "
             "ORDER BY taken_at DESC LIMIT 12",
@@ -195,7 +201,7 @@ async def get_similar_assets(asset_id: int, limit: int = Query(12, ge=1, le=50))
     return [_row_to_brief(r) for r in rows]
 
 
-TRASH_DIR = Path("/mnt/d/数据备份/图像/.trash")
+TRASH_DIR = Path(os.environ.get("ALBUM_EXPLORER_TRASH", "/mnt/d/数据备份/图像/.trash"))
 
 
 @router.delete("/{asset_id}")
@@ -229,21 +235,11 @@ async def delete_asset(asset_id: int, confirm: bool = Query(False)):
     if full_cache.exists():
         full_cache.unlink()
 
-    # 数据库标记删除
+    # 数据库标记删除（FTS 由 trigger 自动同步）
     await db.execute("UPDATE assets SET status = 'deleted' WHERE asset_id = ?", [asset_id])
 
     # 清理邻居表
     await db.execute("DELETE FROM asset_neighbors WHERE asset_id = ? OR neighbor_id = ?", [asset_id, asset_id])
-
-    # 清理 FTS5
-    try:
-        await db.execute(
-            "INSERT INTO assets_fts(assets_fts, rowid, caption_short, scene, tags_text, city_name) "
-            "VALUES('delete', ?, '', '', '', '')",
-            [asset_id],
-        )
-    except Exception:
-        pass
 
     await db.commit()
     return {"status": "deleted", "asset_id": asset_id}

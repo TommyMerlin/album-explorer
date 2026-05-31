@@ -45,8 +45,10 @@ class QueryBuilder:
 
     def filter_tag(self, tag: str | None) -> "QueryBuilder":
         if tag:
-            self.conditions.append("a.tags_text LIKE ?")
-            self.params.append(f"%{tag}%")
+            self.conditions.append(
+                "(a.tags_text = ? OR a.tags_text LIKE ? OR a.tags_text LIKE ? OR a.tags_text LIKE ?)"
+            )
+            self.params.extend([tag, f"{tag}|%", f"%|{tag}|%", f"%|{tag}"])
         return self
 
     def filter_date_range(self, date_from: str | None, date_to: str | None) -> "QueryBuilder":

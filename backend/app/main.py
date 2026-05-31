@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import close_db
+from app.database import close_db, get_db
 from app.routers import albums, assets, clusters, map_view, saved_searches, search, stats, tags, thumbnails, timeline
 
 
@@ -16,6 +16,9 @@ async def lifespan(app: FastAPI):
     # 确保缩略图目录存在
     settings.thumbnail_dir.joinpath("sm").mkdir(parents=True, exist_ok=True)
     settings.thumbnail_dir.joinpath("md").mkdir(parents=True, exist_ok=True)
+    # 初始化数据库连接和表结构
+    await get_db()
+    await albums.ensure_album_tables()
     yield
     await close_db()
 
@@ -30,7 +33,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

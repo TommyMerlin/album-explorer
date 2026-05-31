@@ -35,19 +35,58 @@ async def _ensure_fts(db: aiosqlite.Connection) -> None:
     cursor = await db.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='assets_fts'"
     )
-    if await cursor.fetchone():
-        return
-    await db.execute(
-        "CREATE VIRTUAL TABLE assets_fts USING fts5("
-        "caption_short, scene, tags_text, city_name, "
-        "content='assets', content_rowid='asset_id')"
-    )
-    await db.execute(
-        "INSERT INTO assets_fts(rowid, caption_short, scene, tags_text, city_name) "
-        "SELECT asset_id, COALESCE(caption_short,''), COALESCE(scene,''), "
-        "COALESCE(tags_text,''), COALESCE(city_name,'') FROM assets WHERE status='done'"
-    )
+    if not await cursor.fetchone():
+        await db.execute(
+            "CREATE VIRTUAL TABLE assets_fts USING fts5("
+            "caption_short, scene, tags_text, city_name, "
+            "content='assets', content_rowid='asset_id')"
+        )
+        await db.execute(
+            "INSERT INTO assets_fts(rowid, caption_short, scene, tags_text, city_name) "
+            "SELECT asset_id, COALESCE(caption_short,''), COALESCE(scene,''), "
+            "COALESCE(tags_text,''), COALESCE(city_name,'') FROM assets WHERE status='done'"
+        )
+
+    await _ensure_fts_triggers(db)
     await db.commit()
+
+
+async def _ensure_fts_triggers(db: aiosqlite.Connection) -> None:
+    """保持 assets_fts 与 assets 表同步的触发器。"""
+    await db.execute("""
+        CREATE TRIGGER IF NOT EXISTS assets_fts_insert
+        AFTER INSERT ON assets WHEN NEW.status = 'done'
+        BEGIN
+            INSERT INTO assets_fts(rowid, caption_short, scene, tags_text, city_name)
+            VALUES(NEW.asset_id, COALESCE(NEW.caption_short,''),
+                   COALESCE(NEW.scene,''), COALESCE(NEW.tags_text,''),
+                   COALESCE(NEW.city_name,''));
+        END
+    """)
+    await db.execute("""
+        CREATE TRIGGER IF NOT EXISTS assets_fts_update
+        AFTER UPDATE ON assets WHEN NEW.status = 'done'
+        BEGIN
+            INSERT INTO assets_fts(assets_fts, rowid, caption_short, scene, tags_text, city_name)
+            VALUES('delete', OLD.asset_id, COALESCE(OLD.caption_short,''),
+                   COALESCE(OLD.scene,''), COALESCE(OLD.tags_text,''),
+                   COALESCE(OLD.city_name,''));
+            INSERT INTO assets_fts(rowid, caption_short, scene, tags_text, city_name)
+            VALUES(NEW.asset_id, COALESCE(NEW.caption_short,''),
+                   COALESCE(NEW.scene,''), COALESCE(NEW.tags_text,''),
+                   COALESCE(NEW.city_name,''));
+        END
+    """)
+    await db.execute("""
+        CREATE TRIGGER IF NOT EXISTS assets_fts_delete
+        AFTER UPDATE ON assets WHEN OLD.status = 'done' AND NEW.status != 'done'
+        BEGIN
+            INSERT INTO assets_fts(assets_fts, rowid, caption_short, scene, tags_text, city_name)
+            VALUES('delete', OLD.asset_id, COALESCE(OLD.caption_short,''),
+                   COALESCE(OLD.scene,''), COALESCE(OLD.tags_text,''),
+                   COALESCE(OLD.city_name,''));
+        END
+    """)
 
 
 async def close_db() -> None:

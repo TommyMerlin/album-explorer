@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from fastapi import APIRouter, Query
@@ -57,7 +56,6 @@ async def get_map_points(
         "gps_lat IS NOT NULL",
         "gps_lng IS NOT NULL",
         "status = 'done'",
-        "result_json IS NOT NULL",
     ]
     params: list[Any] = []
 
@@ -69,7 +67,7 @@ async def get_map_points(
         params.extend([west, east])
 
     where = " AND ".join(conditions)
-    sql = f"SELECT asset_id, gps_lat, gps_lng, result_json FROM assets WHERE {where} LIMIT ?"
+    sql = f"SELECT asset_id, gps_lat, gps_lng, caption_short FROM assets WHERE {where} LIMIT ?"
     params.append(limit)
 
     cursor = await db.execute(sql, params)
@@ -77,13 +75,12 @@ async def get_map_points(
 
     points = []
     for r in rows:
-        result = json.loads(r["result_json"]) if r["result_json"] else {}
         points.append(
             MapPoint(
                 asset_id=r["asset_id"],
                 lat=r["gps_lat"],
                 lng=r["gps_lng"],
-                caption_short=result.get("caption_short"),
+                caption_short=r["caption_short"],
             )
         )
     return points
