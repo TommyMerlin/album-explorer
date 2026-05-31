@@ -20,3 +20,7 @@ data/vectors/
 # OS
 .DS_Store
 Thumbs.db
+
+# Misc
+.codegraph/
+backend/*.db
