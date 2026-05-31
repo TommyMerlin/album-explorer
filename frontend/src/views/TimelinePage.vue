@@ -6,12 +6,16 @@
     </div>
     <template v-else>
       <div v-for="bucket in timeline" :key="bucket.month" class="mb-8">
-        <div
-          class="flex items-center gap-3 mb-3 cursor-pointer"
-          @click="toggleMonth(bucket.month)"
-        >
-          <h3 class="text-base font-medium text-gray-700">{{ formatMonth(bucket.month) }}</h3>
+        <div class="flex items-center gap-3 mb-3">
+          <h3
+            class="text-base font-medium text-gray-700 cursor-pointer hover:text-primary-600"
+            @click="toggleMonth(bucket.month)"
+          >{{ formatMonth(bucket.month) }}</h3>
           <span class="text-sm text-gray-400">{{ bucket.count }} 张</span>
+          <router-link
+            :to="{ path: '/explore', query: { month: bucket.month } }"
+            class="text-xs text-primary-500 hover:text-primary-700"
+          >查看全部</router-link>
         </div>
         <PhotoGrid v-if="expandedMonths.has(bucket.month)" :items="monthAssets[bucket.month] || []" />
         <!-- 收起状态显示代表图 -->

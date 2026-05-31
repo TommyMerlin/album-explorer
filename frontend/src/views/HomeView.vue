@@ -37,13 +37,14 @@
       <section v-if="stats && stats.top_cities.length">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">热门地点</h2>
         <div class="flex flex-wrap gap-2">
-          <span
+          <router-link
             v-for="city in stats.top_cities"
             :key="city.city"
+            :to="{ path: '/explore', query: { city: city.city } }"
             class="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-primary-50 hover:border-primary-200 cursor-pointer transition-colors"
           >
             {{ city.city }}（{{ city.count }}）
-          </span>
+          </router-link>
         </div>
       </section>
     </template>

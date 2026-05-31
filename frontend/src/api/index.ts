@@ -108,6 +108,17 @@ export async function fetchAssetDetail(id: number) {
   return res.data
 }
 
+export interface AssetContext {
+  same_cluster: AssetBrief[]
+  cluster_name?: string
+  shared_tags: AssetBrief[]
+}
+
+export async function fetchAssetContext(id: number) {
+  const res = await api.get<AssetContext>(`/assets/${id}/context`)
+  return res.data
+}
+
 export async function fetchTimeline() {
   const res = await api.get<TimelineBucket[]>('/timeline')
   return res.data

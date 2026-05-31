@@ -119,3 +119,56 @@ async def get_asset(asset_id: int) -> AssetDetail:
     if row is None:
         raise HTTPException(status_code=404, detail="资源不存在")
     return _row_to_detail(row)
+
+
+@router.get("/{asset_id}/context")
+async def get_asset_context(asset_id: int):
+    """返回当前图片的上下文探索区块：同聚类、共享标签最多的图片。"""
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT cluster_id, cluster_name, tags_text, city_name, taken_at FROM assets WHERE asset_id = ? AND status='done'",
+        [asset_id],
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="资源不存在")
+
+    cols = BRIEF_COLS.replace("a.", "")
+    context: dict = {}
+
+    # 同聚类
+    if row["cluster_id"] is not None:
+        cursor = await db.execute(
+            f"SELECT {cols} FROM assets WHERE status='done' AND cluster_id = ? AND asset_id != ? "
+            "ORDER BY taken_at DESC LIMIT 8",
+            [row["cluster_id"], asset_id],
+        )
+        context["same_cluster"] = [_row_to_brief(r) for r in await cursor.fetchall()]
+        context["cluster_name"] = row["cluster_name"]
+    else:
+        context["same_cluster"] = []
+
+    # 共享标签最多的图片
+    tags = (row["tags_text"] or "").split("|")
+    tags = [t for t in tags if t]
+    if tags:
+        tag_conditions = " OR ".join(["tags_text LIKE ?" for _ in tags[:5]])
+        tag_params = [f"%{t}%" for t in tags[:5]]
+        cursor = await db.execute(
+            f"SELECT {cols} FROM assets WHERE status='done' AND asset_id != ? AND ({tag_conditions}) "
+            "ORDER BY taken_at DESC LIMIT 12",
+            [asset_id] + tag_params,
+        )
+        rows = await cursor.fetchall()
+        # 按共享标签数排序
+        scored = []
+        for r in rows:
+            r_tags = set((r["tags_text"] or "").split("|"))
+            score = len(set(tags) & r_tags)
+            scored.append((score, r))
+        scored.sort(key=lambda x: -x[0])
+        context["shared_tags"] = [_row_to_brief(r) for _, r in scored[:8]]
+    else:
+        context["shared_tags"] = []
+
+    return context

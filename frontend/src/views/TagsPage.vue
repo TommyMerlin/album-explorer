@@ -26,9 +26,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { fetchTagGraph, type TagGraph } from '../api'
 import * as d3 from 'd3'
 
+const router = useRouter()
 const svgRef = ref<SVGSVGElement | null>(null)
 const loading = ref(true)
 const minWeight = ref(10)
@@ -129,6 +131,10 @@ function renderGraph(graph: TagGraph) {
     .attr('fill-opacity', 0.7)
     .attr('stroke', '#fff')
     .attr('stroke-width', 1.5)
+    .style('cursor', 'pointer')
+    .on('click', (_event: any, d: any) => {
+      router.push({ path: '/explore', query: { tag: d.tag } })
+    })
 
   node.append('text')
     .text((d: any) => d.tag)

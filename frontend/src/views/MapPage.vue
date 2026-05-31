@@ -10,6 +10,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { fetchMapPoints, thumbnailUrl, type MapPoint } from '../api'
 import { useUiStore } from '../stores/ui'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
@@ -21,6 +22,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 
 const mapContainer = ref<HTMLElement | null>(null)
 const ui = useUiStore()
+const router = useRouter()
 let map: L.Map | null = null
 
 onMounted(async () => {
@@ -53,6 +55,20 @@ onMounted(async () => {
     })
     markers.addLayer(marker)
   }
+
+  // 聚合簇点击：获取视口范围跳转到 /explore
+  markers.on('clusterclick', (e: any) => {
+    const bounds = e.layer.getBounds()
+    const south = bounds.getSouth()
+    const north = bounds.getNorth()
+    const west = bounds.getWest()
+    const east = bounds.getEast()
+    if (e.layer.getChildCount() <= 20) return
+    router.push({
+      path: '/explore',
+      query: { has_gps: 'true' },
+    })
+  })
 
   map.addLayer(markers)
 })
