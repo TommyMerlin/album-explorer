@@ -10,6 +10,7 @@ class Settings:
 
     def __init__(self) -> None:
         base = Path(os.environ.get("ALBUM_EXPLORER_BASE", "/mnt/d/数据备份"))
+        project_root = Path(__file__).resolve().parents[2]
 
         self.db_source = Path(
             os.environ.get(
@@ -29,13 +30,13 @@ class Settings:
         self.thumbnail_dir = Path(
             os.environ.get(
                 "ALBUM_EXPLORER_THUMBS",
-                str(base / "album-explorer" / "data" / "thumbnails"),
+                str(project_root / "data" / "thumbnails"),
             )
         )
         self.vectors_dir = Path(
             os.environ.get(
                 "ALBUM_EXPLORER_VECTORS",
-                str(base / "album-explorer" / "data" / "vectors"),
+                str(project_root / "data" / "vectors"),
             )
         )
         self.port = int(os.environ.get("ALBUM_EXPLORER_PORT", "8000"))
