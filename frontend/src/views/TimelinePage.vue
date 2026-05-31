@@ -215,15 +215,13 @@ function setupObserver() {
     }
   }, { rootMargin: '300px' })
 
-  nextTick(() => {
-    const els = document.querySelectorAll<HTMLElement>('[data-month]')
-    const skip = new Set(timeline.value.slice(0, 3).map(b => b.month))
-    els.forEach(el => {
-      const month = el.dataset.month
-      if (month && !skip.has(month)) {
-        observer!.observe(el)
-      }
-    })
+  const els = document.querySelectorAll<HTMLElement>('[data-month]')
+  const skip = new Set(timeline.value.slice(0, 3).map(b => b.month))
+  els.forEach(el => {
+    const month = el.dataset.month
+    if (month && !skip.has(month)) {
+      observer!.observe(el)
+    }
   })
 }
 
@@ -233,11 +231,13 @@ onMounted(async () => {
     // 前3个月立即加载两行图片
     const first3 = timeline.value.slice(0, 3)
     await Promise.all(first3.map(b => loadMonth(b.month)))
-    await nextTick()
-    setupObserver()
   } finally {
     loading.value = false
   }
+  // loading 变为 false 后 DOM 才渲染月份列表，需要等渲染完成
+  await nextTick()
+  await nextTick()
+  setupObserver()
 })
 
 onUnmounted(() => {
