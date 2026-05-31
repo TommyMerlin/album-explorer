@@ -1,10 +1,31 @@
 from __future__ import annotations
 
+import io
+import tempfile
+import zipfile
 from pathlib import Path
 
 from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None
+
+
+def _open_livp_zip(abs_path: Path) -> Image.Image:
+    """从 livp_zip 中提取 HEIC/JPG 静态帧并打开。"""
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+
+    with zipfile.ZipFile(abs_path) as zf:
+        # 找到图片文件（heic/jpg/jpeg），排除视频
+        image_names = [
+            n for n in zf.namelist()
+            if n.lower().endswith(('.heic', '.jpg', '.jpeg', '.png'))
+        ]
+        if not image_names:
+            raise ValueError(f"zip 中无图片文件: {zf.namelist()}")
+
+        data = zf.read(image_names[0])
+        return Image.open(io.BytesIO(data))
 
 
 def ensure_thumbnail(
@@ -14,26 +35,29 @@ def ensure_thumbnail(
     max_size: int,
     quality: int,
 ) -> None:
-    """生成缩略图，支持 HEIC/HEIF 格式。"""
+    """生成缩略图，支持 HEIC/HEIF/livp_zip 格式。"""
     if output_path.exists():
         return
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # HEIC 需要注册 opener
     fmt = source_format.lower()
-    if fmt in ("heic", "heif", "livp_zip"):
+
+    # HEIC 需要注册 opener
+    if fmt in ("heic", "heif"):
         from pillow_heif import register_heif_opener
         register_heif_opener()
 
     try:
-        img = Image.open(abs_path)
+        if fmt == "livp_zip":
+            img = _open_livp_zip(abs_path)
+        else:
+            img = Image.open(abs_path)
+
         img.thumbnail((max_size, max_size), Image.LANCZOS)
-        # 转为 RGB（去除 alpha 通道，WebP 支持但保持一致性）
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
         img.save(output_path, format="WEBP", quality=quality)
     except Exception:
-        # 无法处理的格式，生成占位图
         placeholder = Image.new("RGB", (max_size, max_size), (200, 200, 200))
         placeholder.save(output_path, format="WEBP", quality=50)
