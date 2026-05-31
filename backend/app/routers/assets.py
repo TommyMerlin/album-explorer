@@ -172,3 +172,21 @@ async def get_asset_context(asset_id: int):
         context["shared_tags"] = []
 
     return context
+
+
+@router.get("/{asset_id}/similar")
+async def get_similar_assets(asset_id: int, limit: int = Query(12, ge=1, le=50)):
+    """基于预计算邻居表返回相似图片。"""
+    db = await get_db()
+    cols = BRIEF_COLS.replace("a.", "assets.")
+    cursor = await db.execute(
+        f"SELECT {cols} FROM asset_neighbors n "
+        f"JOIN assets ON assets.asset_id = n.neighbor_id "
+        f"WHERE n.asset_id = ? AND assets.status = 'done' "
+        f"ORDER BY n.rank LIMIT ?",
+        [asset_id, limit],
+    )
+    rows = await cursor.fetchall()
+    if not rows:
+        raise HTTPException(status_code=404, detail="未找到相似图片")
+    return [_row_to_brief(r) for r in rows]

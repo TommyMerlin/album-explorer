@@ -119,6 +119,28 @@ export async function fetchAssetContext(id: number) {
   return res.data
 }
 
+export async function fetchSimilarAssets(id: number, limit = 12) {
+  const res = await api.get<AssetBrief[]>(`/assets/${id}/similar`, { params: { limit } })
+  return res.data
+}
+
+export interface ClusterDetail {
+  cluster_id: number
+  cluster_name: string
+  asset_count: number
+  representative_asset_id: number | null
+  top_tags: string[]
+  summary_text: string | null
+  cover_asset_ids: number[]
+  top_scenes: string[]
+  distinct_tags: string[]
+}
+
+export async function fetchClusterDetail(id: number) {
+  const res = await api.get<ClusterDetail>(`/clusters/${id}/detail`)
+  return res.data
+}
+
 export async function fetchTimeline() {
   const res = await api.get<TimelineBucket[]>('/timeline')
   return res.data

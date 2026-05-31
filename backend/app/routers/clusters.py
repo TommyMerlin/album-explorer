@@ -76,9 +76,11 @@ async def get_cluster_assets(
     total_pages = max(1, (total + page_size - 1) // page_size)
     offset = (page - 1) * page_size
 
-    from app.routers.assets import _BRIEF_COLS, _row_to_brief
+    from app.services.query_builder import BRIEF_COLS
+    from app.routers.assets import _row_to_brief
+    cols = BRIEF_COLS.replace("a.", "")
     data_sql = f"""
-        SELECT {_BRIEF_COLS} FROM assets
+        SELECT {cols} FROM assets
         WHERE cluster_id = ? AND status = 'done'
         ORDER BY taken_at IS NULL, taken_at ASC
         LIMIT ? OFFSET ?
@@ -91,3 +93,29 @@ async def get_cluster_assets(
     return PaginatedResponse(
         items=items, total=total, page=page, page_size=page_size, total_pages=total_pages
     )
+
+
+@router.get("/{cluster_id}/detail")
+async def get_cluster_detail(cluster_id: int):
+    """返回聚类增强信息：摘要、多封面、标签画像。"""
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT * FROM clusters WHERE cluster_id = ?", [cluster_id]
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="聚类不存在")
+
+    keys = row.keys()
+    return {
+        "cluster_id": row["cluster_id"],
+        "cluster_name": row["cluster_name"],
+        "asset_count": row["asset_count"],
+        "representative_asset_id": row["representative_asset_id"],
+        "top_tags": json.loads(row["top_tags"]) if row["top_tags"] else [],
+        "summary_text": row["summary_text"] if "summary_text" in keys else None,
+        "cover_asset_ids": json.loads(row["cover_asset_ids"]) if "cover_asset_ids" in keys and row["cover_asset_ids"] else [],
+        "top_scenes": json.loads(row["top_scenes"]) if "top_scenes" in keys and row["top_scenes"] else [],
+        "distinct_tags": json.loads(row["distinct_tags"]) if "distinct_tags" in keys and row["distinct_tags"] else [],
+    }

@@ -77,8 +77,20 @@
           </div>
 
           <!-- 上下文探索区块 -->
-          <div v-if="context" class="mt-4 pt-3 border-t border-gray-100 space-y-4">
-            <div v-if="context.same_cluster.length">
+          <div v-if="context || similar.length" class="mt-4 pt-3 border-t border-gray-100 space-y-4">
+            <div v-if="similar.length">
+              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">相似图片</h4>
+              <div class="grid grid-cols-4 gap-1">
+                <img
+                  v-for="item in similar.slice(0, 8)"
+                  :key="item.asset_id"
+                  :src="thumbnailUrl(item.asset_id, 'sm')"
+                  class="w-full aspect-square object-cover rounded cursor-pointer hover:opacity-80"
+                  @click="ui.openDetail(item.asset_id)"
+                />
+              </div>
+            </div>
+            <div v-if="context && context.same_cluster.length">
               <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">同主题「{{ context.cluster_name }}」</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
@@ -90,7 +102,7 @@
                 />
               </div>
             </div>
-            <div v-if="context.shared_tags.length">
+            <div v-if="context && context.shared_tags.length">
               <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">相关图片</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
@@ -116,22 +128,26 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
 import { useUiStore } from '../../stores/ui'
-import { fetchAssetDetail, fetchAssetContext, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext } from '../../api'
+import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
 
 const ui = useUiStore()
 const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
+const similar = ref<AssetBrief[]>([])
 
 watch(() => ui.detailAssetId, async (id) => {
   if (id !== null) {
     detail.value = null
     context.value = null
-    const [d, c] = await Promise.all([
+    similar.value = []
+    const [d, c, s] = await Promise.all([
       fetchAssetDetail(id),
       fetchAssetContext(id),
+      fetchSimilarAssets(id, 8).catch(() => []),
     ])
     detail.value = d
     context.value = c
+    similar.value = s
   }
 })
 </script>
