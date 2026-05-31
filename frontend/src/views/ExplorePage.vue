@@ -13,6 +13,15 @@
         @click="onSearch"
         class="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600"
       >搜索</button>
+      <button
+        @click="showCalendar = !showCalendar"
+        class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+      >
+        <span class="flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          按时间
+        </span>
+      </button>
 
       <!-- 活跃筛选标签 -->
       <span
@@ -28,6 +37,11 @@
         @click="clearAll"
         class="text-xs text-gray-400 hover:text-gray-600"
       >清除全部</button>
+    </div>
+
+    <!-- 日历选择器 -->
+    <div v-if="showCalendar" class="mb-4 max-w-xs">
+      <DateRangePicker @confirm="onDateRangeConfirm" />
     </div>
 
     <!-- 结果信息 -->
@@ -74,7 +88,7 @@
         >下一页</button>
       </div>
     </template>
-    <PhotoDetail />
+    <PhotoDetail @deleted="onAssetDeleted" />
   </div>
 </template>
 
@@ -85,6 +99,7 @@ import { fetchAssets, createSavedSearch, type AssetBrief } from '../api'
 import { useFiltersStore } from '../stores/filters'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
+import DateRangePicker from '../components/DateRangePicker.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -98,6 +113,7 @@ const totalPages = ref(1)
 const page = ref(1)
 const searchInput = ref('')
 const sortOption = ref('taken_at:desc')
+const showCalendar = ref(false)
 
 const filterTags = computed(() => {
   const tags: Record<string, string> = {}
@@ -166,6 +182,17 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+function onAssetDeleted(assetId: number) {
+  items.value = items.value.filter(a => a.asset_id !== assetId)
+  total.value = Math.max(0, total.value - 1)
+}
+
+function onDateRangeConfirm(dateFrom: string, dateTo: string) {
+  showCalendar.value = false
+  filters.setFilter({ date_from: dateFrom, date_to: dateTo })
+  syncToUrl()
 }
 
 watch(() => route.query, (query) => {

@@ -79,14 +79,6 @@
         <PhotoGrid :items="clusterPick.items" />
       </section>
 
-      <!-- 按时间查看 -->
-      <section class="mb-8">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">按时间查看</h2>
-        <div class="max-w-xs">
-          <DateRangePicker @confirm="onDateRangeConfirm" />
-        </div>
-      </section>
-
       <!-- 已保存搜索 -->
       <section v-if="savedSearches.length" class="mb-8">
         <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">已保存搜索</h2>
@@ -117,21 +109,18 @@
         </div>
       </section>
     </template>
-    <PhotoDetail />
+    <PhotoDetail @deleted="onAssetDeleted" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { fetchStats, fetchAssets, fetchSavedSearches, fetchRandomPicks, fetchClusterPick, type StatsOverview, type AssetBrief, type SavedSearch, type ClusterPick } from '../api'
 import { useUiStore } from '../stores/ui'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
-import DateRangePicker from '../components/DateRangePicker.vue'
 
 const ui = useUiStore()
-const router = useRouter()
 
 const stats = ref<StatsOverview | null>(null)
 const recentAssets = ref<AssetBrief[]>([])
@@ -150,8 +139,12 @@ async function refreshCluster() {
   clusterPick.value = await fetchClusterPick(twoRows())
 }
 
-function onDateRangeConfirm(dateFrom: string, dateTo: string) {
-  router.push({ path: '/explore', query: { date_from: dateFrom, date_to: dateTo } })
+function onAssetDeleted(assetId: number) {
+  recentAssets.value = recentAssets.value.filter(a => a.asset_id !== assetId)
+  randomPicks.value = randomPicks.value.filter(a => a.asset_id !== assetId)
+  if (clusterPick.value) {
+    clusterPick.value.items = clusterPick.value.items.filter(a => a.asset_id !== assetId)
+  }
 }
 
 async function loadHomeData() {

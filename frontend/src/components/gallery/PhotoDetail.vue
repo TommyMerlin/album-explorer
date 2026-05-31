@@ -214,6 +214,7 @@ async function handleDelete() {
   try {
     await deleteAsset(detail.value.asset_id)
     const deletedId = detail.value.asset_id
+    ui.removeFromList(deletedId)
     ui.closeDetail()
     emit('deleted', deletedId)
   } catch (e: any) {
@@ -235,6 +236,20 @@ watch(() => ui.detailAssetId, async (id) => {
     detail.value = d
     context.value = c
     similar.value = s
+    preloadAdjacent()
   }
 })
+
+function preloadAdjacent() {
+  const list = ui.detailList
+  const idx = ui.detailAssetId !== null ? list.indexOf(ui.detailAssetId) : -1
+  if (idx < 0) return
+  const toPreload: number[] = []
+  if (idx > 0) toPreload.push(list[idx - 1])
+  if (idx < list.length - 1) toPreload.push(list[idx + 1])
+  for (const aid of toPreload) {
+    const img = new Image()
+    img.src = fullImageUrl(aid)
+  }
+}
 </script>

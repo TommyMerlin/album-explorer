@@ -71,7 +71,7 @@
         </div>
       </div>
     </template>
-    <PhotoDetail />
+    <PhotoDetail @deleted="onAssetDeleted" />
 
     <!-- 底部操作栏 -->
     <div
@@ -157,6 +157,12 @@ function handleToggle(assetId: number) {
 function collapseMonth(month: string) {
   delete monthAssets[month]
   expandedMonths.delete(month)
+}
+
+function onAssetDeleted(assetId: number) {
+  for (const month in monthAssets) {
+    monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== assetId)
+  }
 }
 
 async function handleAlbumSelected(albumId: number) {

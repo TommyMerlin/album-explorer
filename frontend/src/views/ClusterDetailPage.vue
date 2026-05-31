@@ -73,7 +73,7 @@
         {{ loading ? '加载中...' : '加载更多' }}
       </button>
     </div>
-    <PhotoDetail />
+    <PhotoDetail @deleted="onAssetDeleted" />
 
     <!-- 底部操作栏 -->
     <div
@@ -164,6 +164,11 @@ async function loadMore() {
   } finally {
     loading.value = false
   }
+}
+
+function onAssetDeleted(assetId: number) {
+  items.value = items.value.filter(a => a.asset_id !== assetId)
+  total.value = Math.max(0, total.value - 1)
 }
 
 onMounted(async () => {

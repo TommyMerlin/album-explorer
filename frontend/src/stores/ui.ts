@@ -48,6 +48,10 @@ export const useUiStore = defineStore('ui', () => {
     detailAssetId.value = null
   }
 
+  function removeFromList(assetId: number) {
+    detailList.value = detailList.value.filter(id => id !== assetId)
+  }
+
   function navigatePrev() {
     if (hasPrev.value) {
       detailAssetId.value = detailList.value[detailIndex.value - 1]
@@ -64,5 +68,5 @@ export const useUiStore = defineStore('ui', () => {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  return { sidebarCollapsed, detailModalOpen, detailAssetId, detailList, dark, gridColumns, hasPrev, hasNext, openDetail, closeDetail, navigatePrev, navigateNext, toggleSidebar, toggleTheme, setGridColumns }
+  return { sidebarCollapsed, detailModalOpen, detailAssetId, detailList, dark, gridColumns, hasPrev, hasNext, openDetail, closeDetail, removeFromList, navigatePrev, navigateNext, toggleSidebar, toggleTheme, setGridColumns }
 })
