@@ -23,28 +23,47 @@
         <div class="flex items-center gap-3 mb-3">
           <h3
             class="text-base font-medium text-gray-700 cursor-pointer hover:text-primary-600"
-            @click="toggleMonth(bucket.month)"
+            @click="loadMonth(bucket.month)"
           >{{ formatMonth(bucket.month) }}</h3>
           <span class="text-sm text-gray-400">{{ bucket.count }} 张</span>
           <router-link
             :to="{ path: '/explore', query: { month: bucket.month } }"
             class="text-xs text-primary-500 hover:text-primary-700"
-          >查看全部</router-link>
+          >在探索页查看</router-link>
         </div>
-        <PhotoGrid
-          v-if="expandedMonths.has(bucket.month)"
-          :items="monthAssets[bucket.month] || []"
-          :selectable="selectMode"
-          :selected-ids="selectedIds"
-          @toggle="handleToggle"
-        />
-        <!-- 收起状态显示代表图 -->
-        <div v-else class="flex gap-1 overflow-hidden h-20">
+        <!-- 已加载的月份显示图片 -->
+        <template v-if="monthAssets[bucket.month]">
+          <PhotoGrid
+            :items="displayItems(bucket.month)"
+            :selectable="selectMode"
+            :selected-ids="selectedIds"
+            @toggle="handleToggle"
+          />
+          <div v-if="!expandedMonths.has(bucket.month) && monthAssets[bucket.month].length > previewCount" class="mt-2">
+            <button
+              @click="expandedMonths.add(bucket.month)"
+              class="text-sm text-primary-500 hover:text-primary-700"
+            >展开全部（{{ monthAssets[bucket.month].length }} 张）</button>
+          </div>
+          <div v-if="expandedMonths.has(bucket.month) && monthAssets[bucket.month].length > previewCount" class="mt-2">
+            <button
+              @click="expandedMonths.delete(bucket.month)"
+              class="text-sm text-gray-400 hover:text-gray-600"
+            >收起</button>
+          </div>
+        </template>
+        <!-- 未加载的月份显示代表图 + 加载按钮 -->
+        <div v-else class="flex items-center gap-2">
           <img
             v-if="bucket.representative_id"
             :src="thumbnailUrl(bucket.representative_id, 'sm')"
-            class="h-20 w-20 object-cover rounded"
+            class="h-20 w-20 object-cover rounded cursor-pointer"
+            @click="loadMonth(bucket.month)"
           />
+          <button
+            @click="loadMonth(bucket.month)"
+            class="text-sm text-primary-500 hover:text-primary-700"
+          >加载图片</button>
         </div>
       </div>
     </template>
@@ -82,10 +101,24 @@ const expandedMonths = reactive(new Set<string>())
 const monthAssets = reactive<Record<string, AssetBrief[]>>({})
 const selectMode = ref(false)
 const selectedIds = reactive(new Set<number>())
+const previewCount = 12
 
 function formatMonth(m: string): string {
   const [year, month] = m.split('-')
   return `${year}年${parseInt(month)}月`
+}
+
+function displayItems(month: string) {
+  const items = monthAssets[month] || []
+  if (expandedMonths.has(month)) return items
+  return items.slice(0, previewCount)
+}
+
+async function loadMonth(month: string) {
+  if (!monthAssets[month]) {
+    const res = await fetchTimelineMonth(month, { page_size: 200 })
+    monthAssets[month] = res.items
+  }
 }
 
 function toggleSelectMode() {
@@ -154,20 +187,15 @@ async function handleBatchDelete() {
 }
 
 async function toggleMonth(month: string) {
-  if (expandedMonths.has(month)) {
-    expandedMonths.delete(month)
-    return
-  }
-  expandedMonths.add(month)
-  if (!monthAssets[month]) {
-    const res = await fetchTimelineMonth(month, { page_size: 100 })
-    monthAssets[month] = res.items
-  }
+  await loadMonth(month)
 }
 
 onMounted(async () => {
   try {
     timeline.value = await fetchTimeline()
+    // 自动加载最近 3 个月的图片
+    const recent = timeline.value.slice(0, 3)
+    await Promise.all(recent.map(b => loadMonth(b.month)))
   } finally {
     loading.value = false
   }
