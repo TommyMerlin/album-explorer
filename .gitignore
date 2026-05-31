@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+dist/
+
+# Node
+node_modules/
+frontend/dist/
+
+# 生成数据（体积大，不入库）
+data/thumbnails/
+data/vectors/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
