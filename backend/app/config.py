@@ -59,6 +59,8 @@ class Settings:
         try:
             import sqlite3
             self.db_path.unlink(missing_ok=True)
+            Path(str(self.db_path) + "-wal").unlink(missing_ok=True)
+            Path(str(self.db_path) + "-shm").unlink(missing_ok=True)
             conn = sqlite3.connect(str(self.db_source))
             conn.execute(f"VACUUM INTO '{self.db_path}'")
             conn.close()
