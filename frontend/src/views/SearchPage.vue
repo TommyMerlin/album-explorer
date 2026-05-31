@@ -54,13 +54,13 @@ async function doSearch(q: string) {
   searched.value = true
   page.value = 1
   try {
-    const res = await searchAssets(q, { page: 1, page_size: 50 })
+    const res = await searchAssets(q, { page: 1, page_size: 50 }, signal)
     if (signal.aborted) return
     items.value = res.items
     total.value = res.total
     totalPages.value = res.total_pages
   } catch (e: any) {
-    if (e?.name === 'AbortError') return
+    if (e?.name === 'AbortError' || e?.name === 'CanceledError' || signal.aborted) return
     throw e
   } finally {
     if (!signal.aborted) loading.value = false

@@ -180,8 +180,8 @@ export async function fetchClusterAssets(id: number, params: Record<string, any>
   return res.data
 }
 
-export async function searchAssets(q: string, params: Record<string, any> = {}) {
-  const res = await api.get<PaginatedResponse<AssetBrief>>('/search', { params: { q, ...params } })
+export async function searchAssets(q: string, params: Record<string, any> = {}, signal?: AbortSignal) {
+  const res = await api.get<PaginatedResponse<AssetBrief>>('/search', { params: { q, ...params }, signal })
   return res.data
 }
 
