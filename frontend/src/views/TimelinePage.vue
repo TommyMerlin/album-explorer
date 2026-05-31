@@ -19,7 +19,7 @@
       <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
     </div>
     <template v-else>
-      <div v-for="bucket in timeline" :key="bucket.month" class="mb-8">
+      <div v-for="bucket in timeline" :key="bucket.month" class="mb-8" :ref="(el) => setMonthRef(el, bucket.month)" :data-month="bucket.month">
         <div class="flex items-center gap-3 mb-3">
           <h3
             class="text-base font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-primary-600"
@@ -100,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { fetchTimeline, fetchTimelineMonth, fetchAlbums, createAlbum, addAssetToAlbum, deleteAsset, thumbnailUrl, type TimelineBucket, type AssetBrief, type Album } from '../api'
 import { useUiStore } from '../stores/ui'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
@@ -117,6 +117,7 @@ const selectMode = ref(false)
 const selectedIds = reactive(new Set<number>())
 const showAlbumPicker = ref(false)
 const previewCount = computed(() => ui.gridColumns * 2)
+const monthRefs = ref<Record<string, HTMLElement>>({})
 
 function formatMonth(m: string): string {
   const [year, month] = m.split('-')
@@ -189,7 +190,6 @@ async function handleBatchDelete() {
     try {
       await deleteAsset(assetId)
       deleted++
-      // 从当前列表中移除
       for (const month in monthAssets) {
         monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== assetId)
       }
@@ -200,16 +200,46 @@ async function handleBatchDelete() {
   selectedIds.clear()
 }
 
-async function toggleMonth(month: string) {
-  await loadMonth(month)
+// 懒加载：IntersectionObserver 监测月份进入视口时自动加载
+let observer: IntersectionObserver | null = null
+
+function setMonthRef(el: any, month: string) {
+  if (el) monthRefs.value[month] = el
+}
+
+function setupObserver() {
+  observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        const month = (entry.target as HTMLElement).dataset.month
+        if (month && !monthAssets[month]) {
+          loadMonth(month)
+        }
+      }
+    }
+  }, { rootMargin: '200px' })
+
+  nextTick(() => {
+    for (const el of Object.values(monthRefs.value)) {
+      observer!.observe(el)
+    }
+  })
 }
 
 onMounted(async () => {
   try {
     timeline.value = await fetchTimeline()
-    await Promise.all(timeline.value.map(b => loadMonth(b.month)))
+    await nextTick()
+    setupObserver()
   } finally {
     loading.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
   }
 })
 </script>
