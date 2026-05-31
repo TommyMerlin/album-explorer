@@ -111,7 +111,7 @@
               </div>
             </div>
             <div v-if="context && context.same_day.length">
-              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">同一天拍摄（{{ context.same_day_date }}）</h4>
+              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">当日图像（{{ context.same_day_date }}）</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
                   v-for="item in context.same_day.slice(0, 8)"
