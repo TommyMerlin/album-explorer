@@ -200,7 +200,7 @@ async function handleBatchDelete() {
   selectedIds.clear()
 }
 
-// 懒加载：IntersectionObserver 监测月份进入视口时自动加载
+// 懒加载：前3个月立即加载两行，其余月份滚动到视口时加载
 let observer: IntersectionObserver | null = null
 
 function setMonthRef(el: any, month: string) {
@@ -220,8 +220,11 @@ function setupObserver() {
   }, { rootMargin: '200px' })
 
   nextTick(() => {
-    for (const el of Object.values(monthRefs.value)) {
-      observer!.observe(el)
+    // 只观察前3个月之后的月份
+    const laterMonths = timeline.value.slice(3)
+    for (const bucket of laterMonths) {
+      const el = monthRefs.value[bucket.month]
+      if (el) observer!.observe(el)
     }
   })
 }
@@ -229,6 +232,9 @@ function setupObserver() {
 onMounted(async () => {
   try {
     timeline.value = await fetchTimeline()
+    // 前3个月立即加载两行图片
+    const first3 = timeline.value.slice(0, 3)
+    await Promise.all(first3.map(b => loadMonth(b.month)))
     await nextTick()
     setupObserver()
   } finally {
