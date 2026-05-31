@@ -3,8 +3,11 @@
     <div
       v-for="asset in items"
       :key="asset.asset_id"
-      class="group relative aspect-square rounded-lg overflow-hidden cursor-pointer bg-gray-100 hover:ring-2 hover:ring-primary-400 transition-all"
-      @click="ui.openDetail(asset.asset_id)"
+      class="group relative aspect-square rounded-lg overflow-hidden cursor-pointer bg-gray-100 transition-all"
+      :class="[
+        selectedSet.has(asset.asset_id) ? 'ring-2 ring-primary-500' : 'hover:ring-2 hover:ring-primary-400',
+      ]"
+      @click="handleClick(asset)"
     >
       <img
         :src="thumbnailUrl(asset.asset_id, 'sm')"
@@ -16,6 +19,12 @@
         @load="loadedSet.add(asset.asset_id)"
         @error="errorSet.add(asset.asset_id)"
       />
+      <!-- 选中标记 -->
+      <div v-if="selectable && selectedSet.has(asset.asset_id)" class="absolute top-1 right-1 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
       <!-- 加载失败占位 -->
       <div v-if="errorSet.has(asset.asset_id)" class="absolute inset-0 flex items-center justify-center bg-gray-100">
         <div class="text-center text-gray-400">
@@ -40,11 +49,27 @@ import type { AssetBrief } from '../../api'
 import { thumbnailUrl } from '../../api'
 import { useUiStore } from '../../stores/ui'
 
-defineProps<{
+const props = withDefaults(defineProps<{
   items: AssetBrief[]
-}>()
+  selectable?: boolean
+  selectedIds?: Set<number>
+}>(), {
+  selectable: false,
+})
+
+const emit = defineEmits<{ toggle: [assetId: number] }>()
 
 const ui = useUiStore()
 const loadedSet = reactive(new Set<number>())
 const errorSet = reactive(new Set<number>())
+
+const selectedSet = props.selectedIds || reactive(new Set<number>())
+
+function handleClick(asset: AssetBrief) {
+  if (props.selectable) {
+    emit('toggle', asset.asset_id)
+  } else {
+    ui.openDetail(asset.asset_id)
+  }
+}
 </script>
