@@ -76,16 +76,16 @@ async def get_cluster_assets(
     total_pages = max(1, (total + page_size - 1) // page_size)
     offset = (page - 1) * page_size
 
-    data_sql = """
-        SELECT * FROM assets
-        WHERE cluster_id = ? AND status = 'done' AND result_json IS NOT NULL
-        ORDER BY taken_at ASC
+    from app.routers.assets import _BRIEF_COLS, _row_to_brief
+    data_sql = f"""
+        SELECT {_BRIEF_COLS} FROM assets
+        WHERE cluster_id = ? AND status = 'done'
+        ORDER BY taken_at IS NULL, taken_at ASC
         LIMIT ? OFFSET ?
     """
     cursor = await db.execute(data_sql, [cluster_id, page_size, offset])
     rows = await cursor.fetchall()
 
-    from app.routers.assets import _row_to_brief
     items = [_row_to_brief(r) for r in rows]
 
     return PaginatedResponse(

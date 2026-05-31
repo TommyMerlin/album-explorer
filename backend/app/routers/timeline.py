@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import time
 
 from fastapi import APIRouter, Query
 
@@ -9,27 +9,36 @@ from app.models import PaginatedResponse, TimelineBucket
 
 router = APIRouter(prefix="/api/timeline", tags=["timeline"])
 
+_cache: dict = {"data": None, "ts": 0}
+_CACHE_TTL = 300
+
 
 @router.get("")
 async def get_timeline() -> list[TimelineBucket]:
-    """按月聚合，返回每月图片数量和代表图。"""
+    now = time.time()
+    if _cache["data"] and (now - _cache["ts"]) < _CACHE_TTL:
+        return _cache["data"]
+
     db = await get_db()
-    sql = """
+    cursor = await db.execute("""
         SELECT
             substr(taken_at, 1, 7) AS month,
             COUNT(*) AS count,
             MIN(asset_id) AS representative_id
         FROM assets
-        WHERE taken_at IS NOT NULL AND status = 'done' AND result_json IS NOT NULL
+        WHERE taken_at IS NOT NULL AND status = 'done'
         GROUP BY month
         ORDER BY month DESC
-    """
-    cursor = await db.execute(sql)
+    """)
     rows = await cursor.fetchall()
-    return [
+    result = [
         TimelineBucket(month=r["month"], count=r["count"], representative_id=r["representative_id"])
         for r in rows
     ]
+
+    _cache["data"] = result
+    _cache["ts"] = now
+    return result
 
 
 @router.get("/{month}")
@@ -38,7 +47,6 @@ async def get_month_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ) -> PaginatedResponse:
-    """获取某月的图片列表。"""
     db = await get_db()
 
     count_sql = "SELECT COUNT(*) FROM assets WHERE taken_at LIKE ? AND status = 'done'"
@@ -47,16 +55,15 @@ async def get_month_assets(
     total_pages = max(1, (total + page_size - 1) // page_size)
     offset = (page - 1) * page_size
 
-    data_sql = """
-        SELECT * FROM assets
-        WHERE taken_at LIKE ? AND status = 'done' AND result_json IS NOT NULL
+    from app.routers.assets import _BRIEF_COLS, _row_to_brief
+    data_sql = f"""
+        SELECT {_BRIEF_COLS} FROM assets
+        WHERE taken_at LIKE ? AND status = 'done'
         ORDER BY taken_at ASC
         LIMIT ? OFFSET ?
     """
     cursor = await db.execute(data_sql, [f"{month}%", page_size, offset])
     rows = await cursor.fetchall()
-
-    from app.routers.assets import _row_to_brief
     items = [_row_to_brief(r) for r in rows]
 
     return PaginatedResponse(

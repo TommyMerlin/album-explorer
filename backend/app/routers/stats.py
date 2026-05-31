@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from collections import Counter
+import time
 
 from fastapi import APIRouter
 
@@ -10,71 +9,47 @@ from app.models import StatsOverview
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
+_cache: dict = {"data": None, "ts": 0}
+_CACHE_TTL = 300  # 5 分钟
+
 
 @router.get("")
 async def get_stats() -> StatsOverview:
-    """总览统计信息。"""
+    now = time.time()
+    if _cache["data"] and (now - _cache["ts"]) < _CACHE_TTL:
+        return _cache["data"]
+
     db = await get_db()
 
-    cursor = await db.execute(
-        "SELECT COUNT(*) FROM assets WHERE status = 'done' AND result_json IS NOT NULL"
-    )
-    total = (await cursor.fetchone())[0]
-
-    cursor = await db.execute(
-        "SELECT COUNT(*) FROM assets WHERE taken_at IS NOT NULL AND status = 'done'"
-    )
-    with_time = (await cursor.fetchone())[0]
-
-    cursor = await db.execute(
-        "SELECT COUNT(*) FROM assets WHERE gps_lat IS NOT NULL AND status = 'done'"
-    )
-    with_gps = (await cursor.fetchone())[0]
-
-    # 有城市名的数量
-    with_city = 0
-    try:
-        cursor = await db.execute(
-            "SELECT COUNT(*) FROM assets WHERE city_name IS NOT NULL AND status = 'done'"
-        )
-        with_city = (await cursor.fetchone())[0]
-    except Exception:
-        pass
-
-    # 聚类数量
-    cluster_count = 0
-    try:
-        cursor = await db.execute(
-            "SELECT COUNT(DISTINCT cluster_id) FROM assets WHERE cluster_id IS NOT NULL"
-        )
-        cluster_count = (await cursor.fetchone())[0]
-    except Exception:
-        pass
-
-    # 时间范围
-    cursor = await db.execute(
-        "SELECT MIN(substr(taken_at,1,7)), MAX(substr(taken_at,1,7)) FROM assets WHERE taken_at IS NOT NULL"
-    )
+    # 单条 SQL 获取所有计数
+    cursor = await db.execute("""
+        SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN taken_at IS NOT NULL THEN 1 ELSE 0 END) AS with_time,
+            SUM(CASE WHEN gps_lat IS NOT NULL THEN 1 ELSE 0 END) AS with_gps,
+            SUM(CASE WHEN city_name IS NOT NULL THEN 1 ELSE 0 END) AS with_city,
+            COUNT(DISTINCT cluster_id) AS cluster_count,
+            MIN(substr(taken_at, 1, 7)) AS min_month,
+            MAX(substr(taken_at, 1, 7)) AS max_month
+        FROM assets WHERE status = 'done'
+    """)
     row = await cursor.fetchone()
-    month_range = [row[0] or "", row[1] or ""]
 
-    # 热门城市
-    top_cities: list[dict] = []
-    try:
-        cursor = await db.execute(
-            "SELECT city_name, COUNT(*) AS cnt FROM assets WHERE city_name IS NOT NULL GROUP BY city_name ORDER BY cnt DESC LIMIT 10"
-        )
-        rows = await cursor.fetchall()
-        top_cities = [{"city": r["city_name"], "count": r["cnt"]} for r in rows]
-    except Exception:
-        pass
-
-    return StatsOverview(
-        total=total,
-        with_time=with_time,
-        with_gps=with_gps,
-        with_city=with_city,
-        cluster_count=cluster_count,
-        month_range=month_range,
-        top_cities=top_cities,
+    cursor = await db.execute(
+        "SELECT city_name, COUNT(*) AS cnt FROM assets WHERE city_name IS NOT NULL AND status = 'done' GROUP BY city_name ORDER BY cnt DESC LIMIT 10"
     )
+    city_rows = await cursor.fetchall()
+
+    result = StatsOverview(
+        total=row["total"],
+        with_time=row["with_time"],
+        with_gps=row["with_gps"],
+        with_city=row["with_city"],
+        cluster_count=row["cluster_count"],
+        month_range=[row["min_month"] or "", row["max_month"] or ""],
+        top_cities=[{"city": r["city_name"], "count": r["cnt"]} for r in city_rows],
+    )
+
+    _cache["data"] = result
+    _cache["ts"] = now
+    return result
