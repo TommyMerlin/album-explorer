@@ -19,7 +19,7 @@
       <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
     </div>
     <template v-else>
-      <div v-for="bucket in timeline" :key="bucket.month" class="mb-8" :ref="(el) => setMonthRef(el, bucket.month)" :data-month="bucket.month">
+      <div v-for="bucket in timeline" :key="bucket.month" class="mb-8" :data-month="bucket.month">
         <div class="flex items-center gap-3 mb-3">
           <h3
             class="text-base font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-primary-600"
@@ -117,7 +117,6 @@ const selectMode = ref(false)
 const selectedIds = reactive(new Set<number>())
 const showAlbumPicker = ref(false)
 const previewCount = computed(() => ui.gridColumns * 2)
-const monthRefs = ref<Record<string, HTMLElement>>({})
 
 function formatMonth(m: string): string {
   const [year, month] = m.split('-')
@@ -203,10 +202,6 @@ async function handleBatchDelete() {
 // 懒加载：前3个月立即加载两行，其余月份滚动到视口时加载
 let observer: IntersectionObserver | null = null
 
-function setMonthRef(el: any, month: string) {
-  if (el) monthRefs.value[month] = el
-}
-
 function setupObserver() {
   observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -214,18 +209,21 @@ function setupObserver() {
         const month = (entry.target as HTMLElement).dataset.month
         if (month && !monthAssets[month]) {
           loadMonth(month)
+          observer!.unobserve(entry.target)
         }
       }
     }
-  }, { rootMargin: '200px' })
+  }, { rootMargin: '300px' })
 
   nextTick(() => {
-    // 只观察前3个月之后的月份
-    const laterMonths = timeline.value.slice(3)
-    for (const bucket of laterMonths) {
-      const el = monthRefs.value[bucket.month]
-      if (el) observer!.observe(el)
-    }
+    const els = document.querySelectorAll<HTMLElement>('[data-month]')
+    const skip = new Set(timeline.value.slice(0, 3).map(b => b.month))
+    els.forEach(el => {
+      const month = el.dataset.month
+      if (month && !skip.has(month)) {
+        observer!.observe(el)
+      }
+    })
   })
 }
 
