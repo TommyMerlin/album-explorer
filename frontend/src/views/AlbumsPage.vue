@@ -1,17 +1,17 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">我的相册</h2>
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ $t('albums.title') }}</h2>
       <button
         @click="handleCreate"
         class="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600"
-      >新建相册</button>
+      >{{ $t('albums.create') }}</button>
     </div>
     <div v-if="loading" class="flex justify-center py-12">
       <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
     </div>
     <div v-else-if="!albums.length" class="text-center py-12 text-gray-400">
-      还没有相册，点击上方按钮创建一个
+      {{ $t('albums.empty') }}
     </div>
     <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       <router-link
@@ -34,7 +34,7 @@
         </div>
         <div class="p-3">
           <h3 class="text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ album.name }}</h3>
-          <p class="text-xs text-gray-400 mt-1">{{ album.asset_count }} 张</p>
+          <p class="text-xs text-gray-400 mt-1">{{ $t('common.photos', { count: album.asset_count }) }}</p>
         </div>
       </router-link>
     </div>
@@ -43,13 +43,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { fetchAlbums, createAlbum, thumbnailUrl, type Album } from '../api'
 
+const { t } = useI18n()
 const albums = ref<Album[]>([])
 const loading = ref(true)
 
 async function handleCreate() {
-  const name = prompt('相册名称：')
+  const name = prompt(t('albums.namePrompt'))
   if (!name) return
   await createAlbum(name)
   albums.value = await fetchAlbums()

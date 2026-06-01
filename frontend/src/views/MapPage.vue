@@ -1,6 +1,6 @@
 <template>
   <div class="h-[calc(100vh-57px-48px)] flex flex-col">
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">地图视图</h2>
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ $t('map.title') }}</h2>
     <div class="flex-1 rounded-xl overflow-hidden border border-gray-200 relative">
       <div ref="mapContainer" class="w-full h-full"></div>
       <!-- 聚合点击后的图片面板 -->
@@ -9,7 +9,7 @@
         class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-[500] max-h-[40%] overflow-y-auto"
       >
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-500">{{ clusterPhotos.length }} 张图片</span>
+          <span class="text-sm text-gray-500">{{ $t('map.photos', { count: clusterPhotos.length }) }}</span>
           <button @click="clusterPhotos = []" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { fetchMapPoints, fetchMapCities, thumbnailUrl, type MapPoint, type CityAggregate } from '../api'
 import { useUiStore } from '../stores/ui'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
@@ -46,6 +47,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 const mapContainer = ref<HTMLElement | null>(null)
 const ui = useUiStore()
 const router = useRouter()
+const { t } = useI18n()
 const clusterPhotos = ref<{asset_id: number}[]>([])
 let map: L.Map | null = null
 let cityLayer: L.LayerGroup | null = null
@@ -63,7 +65,7 @@ function addCityLayer(cities: CityAggregate[]) {
       iconAnchor: [size / 2, size / 2],
     })
     const marker = L.marker([c.lat, c.lng], { icon })
-    marker.bindTooltip(`${c.city}（${c.count}张）`, { direction: 'top' })
+    marker.bindTooltip(t('map.cityTooltip', { city: c.city, count: c.count }), { direction: 'top' })
     marker.on('click', () => {
       router.push({ path: '/explore', query: { city: c.city } })
     })

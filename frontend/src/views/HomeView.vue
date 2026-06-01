@@ -6,7 +6,7 @@
     <template v-else>
       <!-- 设置栏 -->
       <div class="flex items-center justify-end gap-3 mb-4">
-        <label class="text-sm text-gray-500 dark:text-gray-400">每行显示：</label>
+        <label class="text-sm text-gray-500 dark:text-gray-400">{{ $t('home.perRow') }}</label>
         <input
           type="range"
           :min="4"
@@ -22,27 +22,27 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats?.total.toLocaleString() }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">总图片数</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('home.totalPhotos') }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats?.with_time.toLocaleString() }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">有时间信息</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('home.withTime') }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats?.with_gps.toLocaleString() }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">有位置信息</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('home.withGps') }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats?.cluster_count }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">聚类数</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('home.clusterCount') }}</p>
         </div>
       </div>
 
       <!-- 最近图片 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">最近拍摄</h2>
-          <router-link to="/timeline" class="text-sm text-primary-600 hover:text-primary-700">查看全部</router-link>
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ $t('home.recentPhotos') }}</h2>
+          <router-link to="/timeline" class="text-sm text-primary-600 hover:text-primary-700">{{ $t('common.viewAll') }}</router-link>
         </div>
         <PhotoGrid :items="recentAssets" />
       </section>
@@ -51,8 +51,8 @@
       <section v-if="randomPicks.length" class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">随机精选</h2>
-            <button @click="refreshRandom" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="换一批">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ $t('home.randomPicks') }}</h2>
+            <button @click="refreshRandom" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" :title="$t('common.refresh')">
               <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
@@ -66,8 +66,8 @@
       <section v-if="clusterPick && clusterPick.items.length" class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">主题推荐：{{ clusterPick.name }}</h2>
-            <button @click="refreshCluster" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="换一批">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ $t('home.themeRecommend', { name: clusterPick.name }) }}</h2>
+            <button @click="refreshCluster" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" :title="$t('common.refresh')">
               <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
@@ -76,14 +76,14 @@
           <router-link
             :to="{ path: '/explore', query: { cluster_id: String(clusterPick.cluster_id) } }"
             class="text-sm text-primary-600 hover:text-primary-700"
-          >查看全部</router-link>
+          >{{ $t('common.viewAll') }}</router-link>
         </div>
         <PhotoGrid :items="clusterPick.items" />
       </section>
 
       <!-- 已保存搜索 -->
       <section v-if="savedSearches.length" class="mb-8">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">已保存搜索</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ $t('home.savedSearches') }}</h2>
         <div class="flex flex-wrap gap-2">
           <router-link
             v-for="s in savedSearches"
@@ -98,7 +98,7 @@
 
       <!-- 热门城市 -->
       <section v-if="stats && stats.top_cities.length">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">热门地点</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ $t('home.topCities') }}</h2>
         <div class="flex flex-wrap gap-2">
           <router-link
             v-for="city in stats.top_cities"
@@ -106,7 +106,7 @@
             :to="{ path: '/explore', query: { city: city.city } }"
             class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-200 cursor-pointer transition-colors"
           >
-            {{ city.city }}（{{ city.count }}）
+            {{ $t('home.cityCount', { city: city.city, count: city.count }) }}
           </router-link>
         </div>
       </section>

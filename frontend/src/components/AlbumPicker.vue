@@ -7,8 +7,8 @@
     >
       <div class="bg-white dark:bg-gray-800 rounded-xl w-80 max-h-[60vh] overflow-hidden shadow-xl">
         <div class="p-4 border-b border-gray-100 dark:border-gray-700">
-          <h3 class="text-base font-medium text-gray-800 dark:text-gray-100">添加到相册</h3>
-          <p class="text-xs text-gray-400 mt-1">选择已有相册或创建新相册</p>
+          <h3 class="text-base font-medium text-gray-800 dark:text-gray-100">{{ $t('albumPicker.title') }}</h3>
+          <p class="text-xs text-gray-400 mt-1">{{ $t('albumPicker.subtitle') }}</p>
         </div>
         <div class="max-h-[40vh] overflow-y-auto">
           <button
@@ -29,11 +29,11 @@
             </div>
             <div>
               <p class="text-sm text-gray-800 dark:text-gray-100">{{ album.name }}</p>
-              <p class="text-xs text-gray-400">{{ album.asset_count }} 张</p>
+              <p class="text-xs text-gray-400">{{ $t('common.photos', { count: album.asset_count }) }}</p>
             </div>
           </button>
           <div v-if="!albums.length" class="px-4 py-6 text-center text-sm text-gray-400">
-            暂无相册
+            {{ $t('albumPicker.empty') }}
           </div>
         </div>
         <div class="p-3 border-t border-gray-100 dark:border-gray-700">
@@ -41,14 +41,14 @@
             <input
               v-model="newName"
               @keydown.enter="createNew"
-              placeholder="输入新相册名称..."
+              :placeholder="$t('albumPicker.inputPlaceholder')"
               class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:border-primary-400"
             />
             <button
               @click="createNew"
               :disabled="!newName.trim()"
               class="px-3 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-40"
-            >创建</button>
+            >{{ $t('albumPicker.create') }}</button>
           </div>
         </div>
       </div>

@@ -1,16 +1,16 @@
 <template>
   <div>
     <h2 class="text-lg font-semibold text-gray-800 mb-4">
-      搜索<span v-if="query" class="text-gray-400 font-normal">：{{ query }}</span>
+      {{ $t('search.title') }}<span v-if="query" class="text-gray-400 font-normal">{{ $t('search.query', { q: query }) }}</span>
     </h2>
     <div v-if="loading && !items.length" class="flex justify-center py-12">
       <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
     </div>
     <div v-else-if="searched && !items.length" class="text-center py-12 text-gray-400">
-      没有找到匹配的图片
+      {{ $t('search.noResults') }}
     </div>
     <template v-else>
-      <p class="text-sm text-gray-400 mb-4">找到 {{ total }} 个结果</p>
+      <p class="text-sm text-gray-400 mb-4">{{ $t('search.results', { count: total }) }}</p>
       <PhotoGrid :items="items" />
       <div v-if="page < totalPages" class="flex justify-center mt-6">
         <button
@@ -18,7 +18,7 @@
           :disabled="loading"
           class="px-6 py-2 bg-primary-500 text-white rounded-full text-sm hover:bg-primary-600 disabled:opacity-50"
         >
-          {{ loading ? '加载中...' : '加载更多' }}
+          {{ loading ? $t('common.loading') : $t('common.loadMore') }}
         </button>
       </div>
     </template>

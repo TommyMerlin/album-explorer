@@ -6,20 +6,20 @@
         v-model="searchInput"
         @keydown.enter="onSearch"
         type="text"
-        placeholder="搜索图片..."
+        :placeholder="$t('explore.searchPlaceholder')"
         class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm w-64 focus:outline-none focus:border-primary-400"
       />
       <button
         @click="onSearch"
         class="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600"
-      >搜索</button>
+      >{{ $t('explore.search') }}</button>
       <button
         @click="showCalendar = !showCalendar"
         class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
       >
         <span class="flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          按时间
+          {{ $t('explore.byTime') }}
         </span>
       </button>
 
@@ -36,7 +36,7 @@
         v-if="filters.hasFilters"
         @click="clearAll"
         class="text-xs text-gray-400 hover:text-gray-600"
-      >清除全部</button>
+      >{{ $t('explore.clearAll') }}</button>
     </div>
 
     <!-- 日历选择器 -->
@@ -46,16 +46,16 @@
 
     <!-- 结果信息 -->
     <div v-if="loaded && total > 0" class="flex items-center justify-between mb-4">
-      <p class="text-sm text-gray-400">找到 {{ total.toLocaleString() }} 个结果</p>
+      <p class="text-sm text-gray-400">{{ $t('explore.results', { count: total.toLocaleString() }) }}</p>
       <div class="flex items-center gap-3">
         <button
           v-if="filters.hasFilters"
           @click="saveSearch"
           class="text-xs px-2 py-1 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
-        >保存搜索</button>
+        >{{ $t('explore.saveSearch') }}</button>
         <select v-model="sortOption" @change="onSortChange" class="text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1">
-          <option value="taken_at:desc">时间倒序</option>
-          <option value="taken_at:asc">时间正序</option>
+          <option value="taken_at:desc">{{ $t('explore.sortDesc') }}</option>
+          <option value="taken_at:asc">{{ $t('explore.sortAsc') }}</option>
         </select>
       </div>
     </div>
@@ -67,7 +67,7 @@
 
     <!-- 空状态 -->
     <div v-else-if="loaded && !items.length" class="text-center py-12 text-gray-400">
-      没有找到匹配的图片
+      {{ $t('explore.noResults') }}
     </div>
 
     <!-- 结果网格 -->
@@ -79,13 +79,13 @@
           @click="goPage(page - 1)"
           :disabled="page <= 1"
           class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:text-gray-300 rounded text-sm disabled:opacity-30"
-        >上一页</button>
-        <span class="text-sm text-gray-500 dark:text-gray-400">{{ page }} / {{ totalPages }}</span>
+        >{{ $t('common.prevPage') }}</button>
+        <span class="text-sm text-gray-500 dark:text-gray-400">{{ $t('common.pageInfo', { current: page, total: totalPages }) }}</span>
         <button
           @click="goPage(page + 1)"
           :disabled="page >= totalPages"
           class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:text-gray-300 rounded text-sm disabled:opacity-30"
-        >下一页</button>
+        >{{ $t('common.nextPage') }}</button>
       </div>
     </template>
     <PhotoDetail @deleted="onAssetDeleted" />
@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { fetchAssets, createSavedSearch, type AssetBrief } from '../api'
 import { useFiltersStore } from '../stores/filters'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
@@ -104,6 +105,7 @@ import DateRangePicker from '../components/DateRangePicker.vue'
 const route = useRoute()
 const router = useRouter()
 const filters = useFiltersStore()
+const { t } = useI18n()
 
 const items = ref<AssetBrief[]>([])
 const loading = ref(false)
@@ -117,15 +119,15 @@ const showCalendar = ref(false)
 
 const filterTags = computed(() => {
   const tags: Record<string, string> = {}
-  if (filters.q) tags.q = `搜索：${filters.q}`
-  if (filters.selectedMonth) tags.month = `月份：${filters.selectedMonth}`
-  if (filters.selectedCity) tags.city = `城市：${filters.selectedCity}`
-  if (filters.selectedProvince) tags.province = `省份：${filters.selectedProvince}`
-  if (filters.selectedClusterId !== null) tags.cluster_id = `聚类：#${filters.selectedClusterId}`
-  if (filters.selectedTag) tags.tag = `标签：${filters.selectedTag}`
-  if (filters.dateFrom) tags.date_from = `从：${filters.dateFrom}`
-  if (filters.dateTo) tags.date_to = `到：${filters.dateTo}`
-  if (filters.hasGps !== null) tags.has_gps = filters.hasGps ? '有GPS' : '无GPS'
+  if (filters.q) tags.q = t('explore.filterSearch', { q: filters.q })
+  if (filters.selectedMonth) tags.month = t('explore.filterMonth', { month: filters.selectedMonth })
+  if (filters.selectedCity) tags.city = t('explore.filterCity', { city: filters.selectedCity })
+  if (filters.selectedProvince) tags.province = t('explore.filterProvince', { province: filters.selectedProvince })
+  if (filters.selectedClusterId !== null) tags.cluster_id = t('explore.filterCluster', { id: filters.selectedClusterId })
+  if (filters.selectedTag) tags.tag = t('explore.filterTag', { tag: filters.selectedTag })
+  if (filters.dateFrom) tags.date_from = t('explore.filterDateFrom', { date: filters.dateFrom })
+  if (filters.dateTo) tags.date_to = t('explore.filterDateTo', { date: filters.dateTo })
+  if (filters.hasGps !== null) tags.has_gps = filters.hasGps ? t('explore.filterHasGps') : t('explore.filterNoGps')
   return tags
 })
 
@@ -163,11 +165,11 @@ function syncToUrl() {
 
 async function saveSearch() {
   const tags = filterTags.value
-  const name = prompt('为这个搜索命名：', Object.values(tags).join(' + '))
+  const name = prompt(t('explore.saveSearchPrompt'), Object.values(tags).join(' + '))
   if (!name) return
   const queryJson = { ...filters.toRouteQuery() }
   await createSavedSearch(name, queryJson)
-  alert('已保存')
+  alert(t('explore.saved'))
 }
 
 async function loadData() {

@@ -7,31 +7,31 @@
         </svg>
       </router-link>
       <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ clusterName }}</h2>
-      <span class="text-sm text-gray-400">{{ total }} 张</span>
+      <span class="text-sm text-gray-400">{{ $t('common.photos', { count: total }) }}</span>
       <div class="ml-auto flex items-center gap-2">
         <button
           v-if="items.length"
           @click="toggleSelectMode"
           class="px-3 py-1.5 text-sm border rounded-lg transition-colors"
           :class="selectMode ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'"
-        >{{ selectMode ? '选择中' : '选择封面' }}</button>
+        >{{ selectMode ? $t('common.selecting') : $t('clusters.selectCover') }}</button>
         <button
           v-if="selectMode"
           @click="cancelSelect"
           class="px-3 py-1.5 text-sm border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-        >取消</button>
+        >{{ $t('common.cancel') }}</button>
         <button
           v-if="currentCoverId"
           @click="handleClearCover"
           class="px-3 py-1.5 text-sm text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 dark:border-orange-700 dark:hover:bg-orange-900/30"
-        >取消封面</button>
+        >{{ $t('clusters.clearCover') }}</button>
       </div>
     </div>
 
     <!-- 当前封面提示 -->
     <div v-if="currentCoverId && !selectMode" class="mb-4 flex items-center gap-3 px-3 py-2 bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 rounded-lg">
       <img :src="thumbnailUrl(currentCoverId, 'sm')" class="w-10 h-10 rounded object-cover" />
-      <span class="text-sm text-primary-700 dark:text-primary-300">当前封面</span>
+      <span class="text-sm text-primary-700 dark:text-primary-300">{{ $t('clusters.currentCover') }}</span>
     </div>
 
     <!-- 聚类增强信息 -->
@@ -70,7 +70,7 @@
         :disabled="loading"
         class="px-6 py-2 bg-primary-500 text-white rounded-full text-sm hover:bg-primary-600 disabled:opacity-50"
       >
-        {{ loading ? '加载中...' : '加载更多' }}
+        {{ loading ? $t('common.loading') : $t('common.loadMore') }}
       </button>
     </div>
     <PhotoDetail @deleted="onAssetDeleted" />
@@ -80,14 +80,14 @@
       v-if="selectMode && selectedIds.size > 0"
       class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between z-[9999]"
     >
-      <span class="text-sm text-gray-600 dark:text-gray-300">已选择 {{ selectedIds.size }} 张</span>
+      <span class="text-sm text-gray-600 dark:text-gray-300">{{ $t('common.selected', { count: selectedIds.size }) }}</span>
       <div class="flex items-center gap-3">
         <button
           v-if="selectedIds.size === 1"
           @click="handleSetCover"
           class="px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600"
-        >设为封面</button>
-        <span v-else class="text-xs text-gray-400">请只选择 1 张图片来设为封面</span>
+        >{{ $t('clusters.setCover') }}</button>
+        <span v-else class="text-xs text-gray-400">{{ $t('clusters.selectOne') }}</span>
       </div>
     </div>
   </div>
@@ -96,11 +96,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { fetchClusterAssets, fetchClusterDetail, setClusterCover, thumbnailUrl, type AssetBrief, type ClusterDetail } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 const items = ref<AssetBrief[]>([])
 const loading = ref(true)
 const page = ref(1)
@@ -141,7 +143,7 @@ async function handleSetCover() {
     selectMode.value = false
     selectedIds.clear()
   } catch (e: any) {
-    alert(e?.response?.data?.detail || '设置失败')
+    alert(e?.response?.data?.detail || t('clusters.setFailed'))
   }
 }
 
@@ -151,7 +153,7 @@ async function handleClearCover() {
     await setClusterCover(clusterId, null)
     currentCoverId.value = null
   } catch (e: any) {
-    alert(e?.response?.data?.detail || '操作失败')
+    alert(e?.response?.data?.detail || t('clusters.opFailed'))
   }
 }
 
@@ -183,7 +185,7 @@ onMounted(async () => {
     totalPages.value = res.total_pages
     clusterInfo.value = detail
     currentCoverId.value = detail?.representative_asset_id ?? null
-    clusterName.value = detail?.cluster_name || (res.items.length > 0 ? res.items[0].cluster_name || '未分类' : '未分类')
+    clusterName.value = detail?.cluster_name || (res.items.length > 0 ? res.items[0].cluster_name || t('clusters.uncategorized') : t('clusters.uncategorized'))
   } finally {
     loading.value = false
   }

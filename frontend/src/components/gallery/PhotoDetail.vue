@@ -24,7 +24,7 @@
             :alt="detail.caption_short || ''"
             class="max-w-full max-h-[85vh] object-contain"
           />
-          <div v-else class="text-white">加载中...</div>
+          <div v-else class="text-white">{{ $t('detail.loading') }}</div>
           <!-- 右箭头 -->
           <button
             v-if="ui.hasNext"
@@ -74,7 +74,7 @@
           </div>
 
           <div v-if="detail.tags.length" class="mt-4">
-            <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">标签</h4>
+            <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">{{ $t('detail.tags') }}</h4>
             <div class="flex flex-wrap gap-1.5">
               <router-link
                 v-for="tag in detail.tags"
@@ -87,19 +87,19 @@
           </div>
 
           <div v-if="detail.activities.length" class="mt-4">
-            <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">活动</h4>
+            <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">{{ $t('detail.activities') }}</h4>
             <p class="text-sm text-gray-600">{{ detail.activities.join('、') }}</p>
           </div>
 
           <div v-if="detail.main_subjects.length" class="mt-4">
-            <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">主体</h4>
+            <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">{{ $t('detail.subjects') }}</h4>
             <p class="text-sm text-gray-600">{{ detail.main_subjects.join('、') }}</p>
           </div>
 
           <!-- 上下文探索区块 -->
           <div v-if="context || similar.length" class="mt-4 pt-3 border-t border-gray-100 space-y-4">
             <div v-if="similar.length">
-              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">相似图片</h4>
+              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">{{ $t('detail.similar') }}</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
                   v-for="item in similar.slice(0, 8)"
@@ -111,7 +111,7 @@
               </div>
             </div>
             <div v-if="context && context.same_day.length">
-              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">当日图像（{{ context.same_day_date }}）</h4>
+              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">{{ $t('detail.sameDay', { date: context.same_day_date }) }}</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
                   v-for="item in context.same_day.slice(0, 8)"
@@ -123,7 +123,7 @@
               </div>
             </div>
             <div v-if="context && context.shared_tags.length">
-              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">相关图片</h4>
+              <h4 class="text-xs font-medium text-gray-400 uppercase mb-2">{{ $t('detail.related') }}</h4>
               <div class="grid grid-cols-4 gap-1">
                 <img
                   v-for="item in context.shared_tags.slice(0, 8)"
@@ -142,11 +142,11 @@
               <button
                 @click="showAlbumPicker = true"
                 class="w-full px-3 py-1.5 text-sm text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
-              >添加到相册</button>
+              >{{ $t('detail.addToAlbum') }}</button>
               <button
                 @click="handleDelete"
                 class="w-full px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-              >删除图片</button>
+              >{{ $t('detail.deletePhoto') }}</button>
             </div>
           </div>
         </div>
@@ -162,6 +162,7 @@
 
 <script setup lang="ts">
 import { watch, ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '../../stores/ui'
 import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
 import AlbumPicker from '../AlbumPicker.vue'
@@ -169,6 +170,7 @@ import AlbumPicker from '../AlbumPicker.vue'
 const emit = defineEmits<{ deleted: [assetId: number] }>()
 
 const ui = useUiStore()
+const { t } = useI18n()
 const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
 const similar = ref<AssetBrief[]>([])
@@ -201,15 +203,15 @@ async function handleAlbumSelected(albumId: number) {
   try {
     await addAssetToAlbum(albumId, detail.value.asset_id)
     showAlbumPicker.value = false
-    alert('已添加到相册')
+    alert(t('detail.addedToAlbum'))
   } catch (e: any) {
-    alert(e?.response?.data?.detail || '添加失败')
+    alert(e?.response?.data?.detail || t('detail.addFailed'))
   }
 }
 
 async function handleDelete() {
   if (!detail.value) return
-  const confirmed = window.confirm(`确定要删除这张图片吗？\n${detail.value.caption_short || detail.value.rel_path}\n\n原图将移到回收站。`)
+  const confirmed = window.confirm(t('detail.deleteConfirm', { caption: detail.value.caption_short || detail.value.rel_path }))
   if (!confirmed) return
   try {
     await deleteAsset(detail.value.asset_id)
@@ -218,7 +220,7 @@ async function handleDelete() {
     ui.closeDetail()
     emit('deleted', deletedId)
   } catch (e: any) {
-    alert('删除失败：' + (e?.response?.data?.detail || e.message))
+    alert(t('detail.deleteFailed', { error: e?.response?.data?.detail || e.message }))
   }
 }
 

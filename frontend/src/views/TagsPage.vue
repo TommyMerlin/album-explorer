@@ -1,9 +1,9 @@
 <template>
   <div class="h-[calc(100vh-57px-48px)] flex flex-col">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">标签图谱</h2>
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ $t('tags.title') }}</h2>
       <div class="flex items-center gap-3">
-        <label class="text-sm text-gray-500 dark:text-gray-400">最小共现：</label>
+        <label class="text-sm text-gray-500 dark:text-gray-400">{{ $t('tags.minCooccurrence') }}</label>
         <input
           v-model.number="minWeight"
           type="range"

@@ -6,7 +6,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
         </svg>
       </button>
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ displayYear }}年{{ displayMonth }}月</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ $t('calendar.yearMonth', { year: displayYear, month: displayMonth }) }}</span>
       <button @click="nextMonth" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
         <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -28,21 +28,21 @@
     </div>
     <div class="mt-3 flex items-center justify-between">
       <div class="text-xs text-gray-500 dark:text-gray-400">
-        <template v-if="startDate && endDate">{{ startDate }} ~ {{ endDate }}</template>
-        <template v-else-if="startDate">{{ startDate }} ~ 选择结束</template>
-        <template v-else>点击选择起始日期</template>
+        <template v-if="startDate && endDate">{{ $t('calendar.range', { start: startDate, end: endDate }) }}</template>
+        <template v-else-if="startDate">{{ $t('calendar.selectEnd', { date: startDate }) }}</template>
+        <template v-else>{{ $t('calendar.selectStart') }}</template>
       </div>
       <div class="flex items-center gap-2">
         <button
           v-if="startDate"
           @click="clearSelection"
           class="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >清除</button>
+        >{{ $t('calendar.clear') }}</button>
         <button
           v-if="startDate && endDate"
           @click="confirm"
           class="px-3 py-1 text-xs bg-primary-500 text-white rounded hover:bg-primary-600"
-        >查看</button>
+        >{{ $t('calendar.view') }}</button>
       </div>
     </div>
   </div>
@@ -50,10 +50,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{ confirm: [dateFrom: string, dateTo: string] }>()
+const { tm } = useI18n()
 
-const weekDays = ['一', '二', '三', '四', '五', '六', '日']
+const weekDays = computed(() => tm('calendar.weekdays') as string[])
 
 const now = new Date()
 const viewYear = ref(now.getFullYear())
