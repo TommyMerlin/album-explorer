@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import tempfile
 import zipfile
 from pathlib import Path
@@ -59,5 +60,6 @@ def ensure_thumbnail(
             img = img.convert("RGB")
         img.save(output_path, format="WEBP", quality=quality)
     except Exception:
+        logging.getLogger(__name__).warning("缩略图生成失败: %s", source_path, exc_info=True)
         placeholder = Image.new("RGB", (max_size, max_size), (200, 200, 200))
         placeholder.save(output_path, format="WEBP", quality=50)

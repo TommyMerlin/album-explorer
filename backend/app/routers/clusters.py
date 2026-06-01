@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
@@ -38,7 +39,7 @@ async def list_clusters() -> list[ClusterInfo]:
                 for r in rows
             ]
     except Exception:
-        pass
+        logging.getLogger(__name__).warning("clusters 表查询失败，退化为聚合模式", exc_info=True)
 
     # 退化：从 assets 表按 cluster_name 聚合
     sql = """

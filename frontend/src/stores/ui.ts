@@ -12,6 +12,30 @@ export const useUiStore = defineStore('ui', () => {
       : window.matchMedia('(prefers-color-scheme: dark)').matches
   )
   const gridColumns = ref(Number(localStorage.getItem('gridColumns')) || 6)
+  const windowHeight = ref(window.innerHeight)
+  const windowWidth = ref(window.innerWidth)
+
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null
+  function onResize() {
+    if (resizeTimer) clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+      windowHeight.value = window.innerHeight
+      windowWidth.value = window.innerWidth
+    }, 150)
+  }
+  window.addEventListener('resize', onResize)
+
+  const computedPageSize = computed(() => {
+    const sidebarWidth = sidebarCollapsed.value ? 64 : 256
+    const contentWidth = windowWidth.value - sidebarWidth - 48
+    const gap = 8
+    const cellWidth = (contentWidth - (gridColumns.value - 1) * gap) / gridColumns.value
+    const rowHeight = cellWidth + gap
+    const overhead = 180
+    const availableHeight = windowHeight.value - overhead
+    const rows = Math.max(2, Math.floor(availableHeight / rowHeight))
+    return gridColumns.value * rows
+  })
 
   const detailIndex = computed(() => {
     if (detailAssetId.value === null) return -1
@@ -68,5 +92,5 @@ export const useUiStore = defineStore('ui', () => {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  return { sidebarCollapsed, detailModalOpen, detailAssetId, detailList, dark, gridColumns, hasPrev, hasNext, openDetail, closeDetail, removeFromList, navigatePrev, navigateNext, toggleSidebar, toggleTheme, setGridColumns }
+  return { sidebarCollapsed, detailModalOpen, detailAssetId, detailList, dark, gridColumns, computedPageSize, hasPrev, hasNext, openDetail, closeDetail, removeFromList, navigatePrev, navigateNext, toggleSidebar, toggleTheme, setGridColumns }
 })

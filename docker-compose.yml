@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${ALBUM_EXPLORER_BASE:-./_sample_data}:/data:ro
+      - ./data/thumbnails:/app/data/thumbnails
+      - ./data/vectors:/app/data/vectors
+    environment:
+      - ALBUM_EXPLORER_BASE=/data
+      - ALBUM_EXPLORER_DB=/data/.album-assetizer/state/album_assetizer.db
+      - ALBUM_EXPLORER_IMAGE_ROOT=/data
+      - ALBUM_EXPLORER_THUMBS=/app/data/thumbnails
+      - ALBUM_EXPLORER_VECTORS=/app/data/vectors
+      - ALBUM_EXPLORER_TRASH=/app/data/.trash
+      - ALBUM_EXPLORER_CORS_ORIGINS=*

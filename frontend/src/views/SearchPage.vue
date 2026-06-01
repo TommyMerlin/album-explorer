@@ -30,10 +30,12 @@
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { searchAssets, type AssetBrief } from '../api'
+import { useUiStore } from '../stores/ui'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 
 const route = useRoute()
+const ui = useUiStore()
 const items = ref<AssetBrief[]>([])
 const loading = ref(false)
 const searched = ref(false)
@@ -54,7 +56,7 @@ async function doSearch(q: string) {
   searched.value = true
   page.value = 1
   try {
-    const res = await searchAssets(q, { page: 1, page_size: 50 }, signal)
+    const res = await searchAssets(q, { page: 1, page_size: ui.computedPageSize }, signal)
     if (signal.aborted) return
     items.value = res.items
     total.value = res.total
@@ -71,7 +73,7 @@ async function loadMore() {
   loading.value = true
   try {
     page.value++
-    const res = await searchAssets(query.value, { page: page.value })
+    const res = await searchAssets(query.value, { page: page.value, page_size: ui.computedPageSize })
     items.value.push(...res.items)
   } finally {
     loading.value = false

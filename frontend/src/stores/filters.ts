@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useUiStore } from './ui'
 
 export interface ExploreQuery {
   q?: string
@@ -18,6 +19,7 @@ export interface ExploreQuery {
 }
 
 export const useFiltersStore = defineStore('filters', () => {
+  const ui = useUiStore()
   const q = ref<string>('')
   const selectedMonth = ref<string | null>(null)
   const selectedCity = ref<string | null>(null)
@@ -30,7 +32,8 @@ export const useFiltersStore = defineStore('filters', () => {
   const sortBy = ref<string>('taken_at')
   const order = ref<string>('desc')
   const page = ref<number>(1)
-  const pageSize = ref<number>(50)
+
+  const pageSize = computed(() => ui.computedPageSize)
 
   const activeParams = computed<Record<string, any>>(() => {
     const params: Record<string, any> = {}
@@ -69,7 +72,6 @@ export const useFiltersStore = defineStore('filters', () => {
     sortBy.value = query.sort_by || 'taken_at'
     order.value = query.order || 'desc'
     page.value = query.page ? Number(query.page) : 1
-    pageSize.value = query.page_size ? Number(query.page_size) : 50
   }
 
   function toRouteQuery(): Record<string, string> {
@@ -86,7 +88,6 @@ export const useFiltersStore = defineStore('filters', () => {
     if (sortBy.value !== 'taken_at') rq.sort_by = sortBy.value
     if (order.value !== 'desc') rq.order = order.value
     if (page.value > 1) rq.page = String(page.value)
-    if (pageSize.value !== 50) rq.page_size = String(pageSize.value)
     return rq
   }
 
@@ -103,7 +104,6 @@ export const useFiltersStore = defineStore('filters', () => {
     if (params.sort_by !== undefined) sortBy.value = params.sort_by || 'taken_at'
     if (params.order !== undefined) order.value = params.order || 'desc'
     if (params.page !== undefined) page.value = params.page || 1
-    if (params.page_size !== undefined) pageSize.value = params.page_size || 50
     // 切换筛选条件时重置页码
     if (params.page === undefined) page.value = 1
   }
@@ -121,7 +121,6 @@ export const useFiltersStore = defineStore('filters', () => {
     sortBy.value = 'taken_at'
     order.value = 'desc'
     page.value = 1
-    pageSize.value = 50
   }
 
   return {

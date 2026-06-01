@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,6 +12,11 @@ from app.config import settings
 from app.database import close_db, get_db
 from app.routers import albums, assets, clusters, map_view, saved_searches, search, stats, tags, thumbnails, timeline
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,6 +26,7 @@ async def lifespan(app: FastAPI):
     # 初始化数据库连接和表结构
     await get_db()
     await albums.ensure_album_tables()
+    await saved_searches.ensure_table()
     yield
     await close_db()
 
@@ -30,9 +38,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_cors_origins = os.environ.get("ALBUM_EXPLORER_CORS_ORIGINS", "http://localhost:3000,http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in _cors_origins.split(",")],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

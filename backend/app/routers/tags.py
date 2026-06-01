@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections import Counter
 
 from fastapi import APIRouter, Query
@@ -57,7 +58,7 @@ async def get_tag_graph(
             nodes = [TagNode(tag=t, count=tag_counts.get(t, 0)) for t in node_set]
             return TagGraph(nodes=nodes, edges=edges)
     except Exception:
-        pass
+        logging.getLogger(__name__).warning("tag_graph 表查询失败，退化为实时计算", exc_info=True)
 
     # 实时计算（首次使用或表不存在时）
     cursor = await db.execute(

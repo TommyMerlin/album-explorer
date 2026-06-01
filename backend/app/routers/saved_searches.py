@@ -29,7 +29,7 @@ class SavedSearchResponse(BaseModel):
     updated_at: str
 
 
-async def _ensure_table():
+async def ensure_table():
     db = await get_db()
     await db.execute("""
         CREATE TABLE IF NOT EXISTS saved_searches (
@@ -45,7 +45,6 @@ async def _ensure_table():
 
 @router.get("")
 async def list_saved_searches() -> list[SavedSearchResponse]:
-    await _ensure_table()
     db = await get_db()
     cursor = await db.execute("SELECT * FROM saved_searches ORDER BY updated_at DESC")
     rows = await cursor.fetchall()
@@ -63,7 +62,6 @@ async def list_saved_searches() -> list[SavedSearchResponse]:
 
 @router.post("", status_code=201)
 async def create_saved_search(body: SavedSearchCreate) -> SavedSearchResponse:
-    await _ensure_table()
     db = await get_db()
     now = datetime.now().isoformat()
     cursor = await db.execute(
@@ -82,7 +80,6 @@ async def create_saved_search(body: SavedSearchCreate) -> SavedSearchResponse:
 
 @router.patch("/{search_id}")
 async def update_saved_search(search_id: int, body: SavedSearchUpdate) -> SavedSearchResponse:
-    await _ensure_table()
     db = await get_db()
     cursor = await db.execute("SELECT * FROM saved_searches WHERE id = ?", [search_id])
     row = await cursor.fetchone()
@@ -109,7 +106,6 @@ async def update_saved_search(search_id: int, body: SavedSearchUpdate) -> SavedS
 
 @router.delete("/{search_id}", status_code=204)
 async def delete_saved_search(search_id: int):
-    await _ensure_table()
     db = await get_db()
     cursor = await db.execute("SELECT id FROM saved_searches WHERE id = ?", [search_id])
     if await cursor.fetchone() is None:

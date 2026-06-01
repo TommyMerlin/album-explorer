@@ -109,8 +109,8 @@ export async function fetchAssetDetail(id: number) {
 }
 
 export interface AssetContext {
-  same_cluster: AssetBrief[]
-  cluster_name?: string
+  same_day: AssetBrief[]
+  same_day_date?: string | null
   shared_tags: AssetBrief[]
 }
 

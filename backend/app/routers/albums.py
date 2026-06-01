@@ -168,8 +168,8 @@ async def add_asset_to_album(album_id: int, body: AlbumAssetAdd):
             "INSERT INTO album_assets (album_id, asset_id, added_at) VALUES (?, ?, ?)",
             [album_id, body.asset_id, now],
         )
-    except Exception:
-        raise HTTPException(status_code=409, detail="图片已在相册中")
+    except Exception as e:
+        raise HTTPException(status_code=409, detail="图片已在相册中") from e
 
     # 如果相册没有封面，自动设置
     cursor = await db.execute("SELECT cover_asset_id FROM albums WHERE id = ?", [album_id])

@@ -9,7 +9,7 @@ class Settings:
     """应用配置，所有路径通过环境变量覆盖，方便后期桌面打包。"""
 
     def __init__(self) -> None:
-        base = Path(os.environ.get("ALBUM_EXPLORER_BASE", "/mnt/d/数据备份"))
+        base = Path(os.environ.get("ALBUM_EXPLORER_BASE", str(Path(__file__).resolve().parents[2] / "data")))
         project_root = Path(__file__).resolve().parents[2]
 
         self.db_source = Path(

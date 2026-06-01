@@ -202,7 +202,7 @@ async def get_similar_assets(asset_id: int, limit: int = Query(12, ge=1, le=50))
     return [_row_to_brief(r) for r in rows]
 
 
-TRASH_DIR = Path(os.environ.get("ALBUM_EXPLORER_TRASH", "/mnt/d/数据备份/图像/.trash"))
+TRASH_DIR = Path(os.environ.get("ALBUM_EXPLORER_TRASH", str(Path(__file__).resolve().parents[3] / "data" / ".trash")))
 
 
 @router.delete("/{asset_id}")
