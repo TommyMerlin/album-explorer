@@ -27,7 +27,7 @@
 
 <p>
   <img src="docs/images/screenshot-map.png" alt="Map View" width="45%">
-  <img src="docs/images/screenshot-tags.png" alt="Tag Graph" width="45%">
+  <img src="docs/images/screenshot-tags.png" alt="Knowledge Graph" width="45%">
 </p>
 
 </div>
