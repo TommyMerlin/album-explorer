@@ -57,6 +57,7 @@ album-assetizer generates structured data → album-explorer visualizes it
 | **Full-Text Search** | FTS5 covering descriptions, scenes, tags, city names |
 | **Manual Albums** | Create/delete albums, add/remove photos, batch operations |
 | **Similarity** | Pre-computed Top-K neighbors for instant recommendations + same-day photos |
+| **i18n** | Chinese/English UI toggle with persistent preference |
 | **Dark Mode** | One-click toggle, auto-detects system preference |
 
 ---
