@@ -25,6 +25,11 @@
 
 <img src="docs/images/screenshot.png" alt="效果预览" width="90%">
 
+<p>
+  <img src="docs/images/screenshot-map.png" alt="地图视图" width="45%">
+  <img src="docs/images/screenshot-tags.png" alt="标签图谱" width="45%">
+</p>
+
 </div>
 
 ---
