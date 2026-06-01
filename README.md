@@ -1,5 +1,5 @@
 <p align="center">
-  <span>简体中文</span>
+  <a href="./README_en.md">English</a> | <span>简体中文</span>
 </p>
 
 <div align="center">
@@ -23,7 +23,7 @@
   </a>
 </p>
 
-<img src="docs/images/screenshot.png" alt="效果预览" width="80%">
+<img src="docs/images/screenshot.png" alt="效果预览" width="90%">
 
 </div>
 
