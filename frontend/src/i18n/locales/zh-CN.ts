@@ -4,6 +4,7 @@ export default {
     timeline: '时间线',
     map: '地图',
     clusters: '聚类',
+    persons: '人物',
     tags: '标签图谱',
     albums: '相册',
     favorites: '收藏',
@@ -112,6 +113,19 @@ export default {
   favorites: {
     title: '我的收藏',
     empty: '还没有收藏，在图片详情中点击心形按钮收藏图片',
+  },
+  persons: {
+    title: '人物',
+    empty: '暂无人物数据，请先运行人脸检测和聚类任务',
+    unnamed: '未命名',
+    merge: '合并人物',
+    manageFaces: '管理人脸',
+    removeFaces: '移出',
+    selectToRemove: '选择要移出此人物的人脸',
+    mergeTitle: '合并人物',
+    mergeHint: '选择要合并到当前人物的其他人物',
+    mergeConfirm: '确认合并',
+    renamePrompt: '输入人物名称',
   },
   clusters: {
     title: '聚类相册',

@@ -322,6 +322,78 @@ export async function fetchMediaTypeStats() {
   return res.data
 }
 
+// --- Persons / Faces ---
+
+export interface PersonInfo {
+  person_id: number
+  name: string
+  face_count: number
+  representative_face_id: number
+}
+
+export interface FaceInfo {
+  face_id: number
+  asset_id: number
+  bbox: string
+  person_id: number | null
+}
+
+export function faceThumbUrl(faceId: number): string {
+  return `/static/faces/${faceId}.webp`
+}
+
+export async function fetchPersons() {
+  const res = await api.get<PersonInfo[]>('/persons')
+  return res.data
+}
+
+export interface PersonDetail {
+  person_id: number
+  name: string
+  representative_face_id: number
+  face_count: number
+  items: AssetBrief[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
+export async function fetchPersonAssets(id: number, params: Record<string, any> = {}) {
+  const res = await api.get<PersonDetail>(`/persons/${id}`, { params })
+  return res.data
+}
+
+export async function fetchPersonFaces(id: number) {
+  const res = await api.get<FaceInfo[]>(`/persons/${id}/faces`)
+  return res.data
+}
+
+export async function fetchUncategorizedFaces(params: Record<string, any> = {}) {
+  const res = await api.get<PaginatedResponse<FaceInfo>>('/persons/uncategorized', { params })
+  return res.data
+}
+
+export async function renamePerson(id: number, name: string) {
+  const res = await api.patch(`/persons/${id}`, { name })
+  return res.data
+}
+
+export async function mergePersons(targetId: number, sourceIds: number[]) {
+  const res = await api.post('/persons/merge', { target_id: targetId, source_ids: sourceIds })
+  return res.data
+}
+
+export async function removePersonFaces(personId: number, faceIds: number[]) {
+  const res = await api.post(`/persons/${personId}/remove-faces`, { face_ids: faceIds })
+  return res.data
+}
+
+export async function addPersonFaces(personId: number, faceIds: number[]) {
+  const res = await api.post(`/persons/${personId}/add-faces`, { face_ids: faceIds })
+  return res.data
+}
+
 export async function setClusterCover(clusterId: number, assetId: number | null) {
   const res = await api.patch(`/clusters/${clusterId}`, { representative_asset_id: assetId })
   return res.data

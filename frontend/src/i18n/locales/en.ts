@@ -4,6 +4,7 @@ export default {
     timeline: 'Timeline',
     map: 'Map',
     clusters: 'Clusters',
+    persons: 'People',
     tags: 'Tag Graph',
     albums: 'Albums',
     favorites: 'Favorites',
@@ -112,6 +113,19 @@ export default {
   favorites: {
     title: 'My Favorites',
     empty: 'No favorites yet. Click the heart button in photo details to add.',
+  },
+  persons: {
+    title: 'People',
+    empty: 'No people data. Please run face detection and clustering tasks first.',
+    unnamed: 'Unnamed',
+    merge: 'Merge',
+    manageFaces: 'Manage Faces',
+    removeFaces: 'Remove',
+    selectToRemove: 'Select faces to remove from this person',
+    mergeTitle: 'Merge People',
+    mergeHint: 'Select other people to merge into this person',
+    mergeConfirm: 'Merge',
+    renamePrompt: 'Enter person name',
   },
   clusters: {
     title: 'Clusters',
