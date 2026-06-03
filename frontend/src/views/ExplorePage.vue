@@ -22,6 +22,28 @@
           {{ $t('explore.byTime') }}
         </span>
       </button>
+      <select
+        v-model="mediaTypeOption"
+        @change="onMediaTypeChange"
+        class="px-3 py-1.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm"
+      >
+        <option value="">{{ $t('explore.mediaTypeAll') }}</option>
+        <option value="screenshot">{{ $t('explore.mediaTypeScreenshot') }}</option>
+        <option value="long_image">{{ $t('explore.mediaTypeLongImage') }}</option>
+        <option value="gif">{{ $t('explore.mediaTypeGif') }}</option>
+      </select>
+      <button
+        @click="toggleFavoriteFilter"
+        class="px-3 py-1.5 border rounded-lg text-sm transition-colors"
+        :class="filters.isFavorite ? 'border-red-300 bg-red-50 dark:bg-red-900/20 text-red-600' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+      >
+        <span class="flex items-center gap-1">
+          <svg class="w-4 h-4" :fill="filters.isFavorite ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          </svg>
+          {{ $t('explore.filterFavorite') }}
+        </span>
+      </button>
 
       <!-- 活跃筛选标签 -->
       <span
@@ -116,6 +138,7 @@ const page = ref(1)
 const searchInput = ref('')
 const sortOption = ref('taken_at:desc')
 const showCalendar = ref(false)
+const mediaTypeOption = ref('')
 
 const filterTags = computed(() => {
   const tags: Record<string, string> = {}
@@ -128,6 +151,8 @@ const filterTags = computed(() => {
   if (filters.dateFrom) tags.date_from = t('explore.filterDateFrom', { date: filters.dateFrom })
   if (filters.dateTo) tags.date_to = t('explore.filterDateTo', { date: filters.dateTo })
   if (filters.hasGps !== null) tags.has_gps = filters.hasGps ? t('explore.filterHasGps') : t('explore.filterNoGps')
+  if (filters.isFavorite !== null) tags.is_favorite = t('explore.filterFavorite')
+  if (filters.selectedMediaType) tags.media_type = t('explore.filterMediaType', { type: t(`explore.mediaType_${filters.selectedMediaType}`) })
   return tags
 })
 
@@ -150,6 +175,16 @@ function onSearch() {
 function onSortChange() {
   const [sb, ord] = sortOption.value.split(':')
   filters.setFilter({ sort_by: sb, order: ord })
+  syncToUrl()
+}
+
+function onMediaTypeChange() {
+  filters.setFilter({ media_type: mediaTypeOption.value || undefined })
+  syncToUrl()
+}
+
+function toggleFavoriteFilter() {
+  filters.setFilter({ is_favorite: filters.isFavorite ? undefined : true })
   syncToUrl()
 }
 
@@ -202,6 +237,7 @@ watch(() => route.query, (query) => {
   filters.applyFromRoute(query as Record<string, any>)
   searchInput.value = filters.q
   sortOption.value = `${filters.sortBy}:${filters.order}`
+  mediaTypeOption.value = filters.selectedMediaType || ''
   loadData()
 }, { deep: true })
 
@@ -209,6 +245,7 @@ onMounted(() => {
   filters.applyFromRoute(route.query as Record<string, any>)
   searchInput.value = filters.q
   sortOption.value = `${filters.sortBy}:${filters.order}`
+  mediaTypeOption.value = filters.selectedMediaType || ''
   loadData()
 })
 </script>

@@ -67,6 +67,19 @@ class QueryBuilder:
             self.conditions.append("a.gps_lat IS NULL")
         return self
 
+    def filter_favorite(self, is_favorite: bool | None) -> "QueryBuilder":
+        if is_favorite is True:
+            self.conditions.append("a.asset_id IN (SELECT asset_id FROM favorites)")
+        return self
+
+    def filter_media_type(self, media_type: str | None) -> "QueryBuilder":
+        if media_type:
+            self.conditions.append(
+                "a.asset_id IN (SELECT asset_id FROM asset_media_types WHERE media_type = ?)"
+            )
+            self.params.append(media_type)
+        return self
+
     def filter_text(self, q: str | None) -> "QueryBuilder":
         if q:
             self.use_fts = True

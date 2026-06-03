@@ -12,6 +12,8 @@ export interface ExploreQuery {
   date_from?: string
   date_to?: string
   has_gps?: boolean
+  is_favorite?: boolean
+  media_type?: string
   sort_by?: string
   order?: string
   page?: number
@@ -29,6 +31,8 @@ export const useFiltersStore = defineStore('filters', () => {
   const dateFrom = ref<string | null>(null)
   const dateTo = ref<string | null>(null)
   const hasGps = ref<boolean | null>(null)
+  const isFavorite = ref<boolean | null>(null)
+  const selectedMediaType = ref<string | null>(null)
   const sortBy = ref<string>('taken_at')
   const order = ref<string>('desc')
   const page = ref<number>(1)
@@ -46,6 +50,8 @@ export const useFiltersStore = defineStore('filters', () => {
     if (dateFrom.value) params.date_from = dateFrom.value
     if (dateTo.value) params.date_to = dateTo.value
     if (hasGps.value !== null) params.has_gps = hasGps.value
+    if (isFavorite.value !== null) params.is_favorite = isFavorite.value
+    if (selectedMediaType.value) params.media_type = selectedMediaType.value
     if (sortBy.value !== 'taken_at') params.sort_by = sortBy.value
     if (order.value !== 'desc') params.order = order.value
     params.page = page.value
@@ -56,7 +62,8 @@ export const useFiltersStore = defineStore('filters', () => {
   const hasFilters = computed(() => {
     return !!(q.value || selectedMonth.value || selectedCity.value || selectedProvince.value ||
       selectedClusterId.value !== null || selectedTag.value ||
-      dateFrom.value || dateTo.value || hasGps.value !== null)
+      dateFrom.value || dateTo.value || hasGps.value !== null ||
+      isFavorite.value !== null || selectedMediaType.value)
   })
 
   function applyFromRoute(query: Record<string, any>) {
@@ -69,6 +76,8 @@ export const useFiltersStore = defineStore('filters', () => {
     dateFrom.value = query.date_from || null
     dateTo.value = query.date_to || null
     hasGps.value = query.has_gps === 'true' ? true : query.has_gps === 'false' ? false : null
+    isFavorite.value = query.is_favorite === 'true' ? true : null
+    selectedMediaType.value = query.media_type || null
     sortBy.value = query.sort_by || 'taken_at'
     order.value = query.order || 'desc'
     page.value = query.page ? Number(query.page) : 1
@@ -85,6 +94,8 @@ export const useFiltersStore = defineStore('filters', () => {
     if (dateFrom.value) rq.date_from = dateFrom.value
     if (dateTo.value) rq.date_to = dateTo.value
     if (hasGps.value !== null) rq.has_gps = String(hasGps.value)
+    if (isFavorite.value !== null) rq.is_favorite = String(isFavorite.value)
+    if (selectedMediaType.value) rq.media_type = selectedMediaType.value
     if (sortBy.value !== 'taken_at') rq.sort_by = sortBy.value
     if (order.value !== 'desc') rq.order = order.value
     if (page.value > 1) rq.page = String(page.value)
@@ -101,6 +112,8 @@ export const useFiltersStore = defineStore('filters', () => {
     if (params.date_from !== undefined) dateFrom.value = params.date_from || null
     if (params.date_to !== undefined) dateTo.value = params.date_to || null
     if (params.has_gps !== undefined) hasGps.value = params.has_gps ?? null
+    if (params.is_favorite !== undefined) isFavorite.value = params.is_favorite ?? null
+    if (params.media_type !== undefined) selectedMediaType.value = params.media_type || null
     if (params.sort_by !== undefined) sortBy.value = params.sort_by || 'taken_at'
     if (params.order !== undefined) order.value = params.order || 'desc'
     if (params.page !== undefined) page.value = params.page || 1
@@ -118,6 +131,8 @@ export const useFiltersStore = defineStore('filters', () => {
     dateFrom.value = null
     dateTo.value = null
     hasGps.value = null
+    isFavorite.value = null
+    selectedMediaType.value = null
     sortBy.value = 'taken_at'
     order.value = 'desc'
     page.value = 1
@@ -125,7 +140,8 @@ export const useFiltersStore = defineStore('filters', () => {
 
   return {
     q, selectedMonth, selectedCity, selectedProvince, selectedClusterId,
-    selectedTag, dateFrom, dateTo, hasGps, sortBy, order, page, pageSize,
+    selectedTag, dateFrom, dateTo, hasGps, isFavorite, selectedMediaType,
+    sortBy, order, page, pageSize,
     activeParams, hasFilters,
     applyFromRoute, toRouteQuery, setFilter, clearAll,
   }

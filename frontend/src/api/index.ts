@@ -299,6 +299,29 @@ export async function removeAssetFromAlbum(albumId: number, assetId: number) {
   await api.delete(`/albums/${albumId}/assets/${assetId}`)
 }
 
+export async function fetchFavorites(params: Record<string, any> = {}) {
+  const res = await api.get<PaginatedResponse<AssetBrief>>('/favorites', { params })
+  return res.data
+}
+
+export async function fetchFavoriteIds() {
+  const res = await api.get<number[]>('/favorites/ids')
+  return res.data
+}
+
+export async function addFavorite(assetId: number) {
+  await api.post(`/favorites/${assetId}`)
+}
+
+export async function removeFavorite(assetId: number) {
+  await api.delete(`/favorites/${assetId}`)
+}
+
+export async function fetchMediaTypeStats() {
+  const res = await api.get<{ type: string; count: number }[]>('/stats/media-types')
+  return res.data
+}
+
 export async function setClusterCover(clusterId: number, assetId: number | null) {
   const res = await api.patch(`/clusters/${clusterId}`, { representative_asset_id: assetId })
   return res.data

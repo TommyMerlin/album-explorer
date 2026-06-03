@@ -58,6 +58,16 @@ async def get_stats() -> StatsOverview:
     return result
 
 
+@router.get("/stats/media-types")
+async def get_media_type_stats():
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT media_type, COUNT(*) AS count FROM asset_media_types GROUP BY media_type ORDER BY count DESC"
+    )
+    rows = await cursor.fetchall()
+    return [{"type": r["media_type"], "count": r["count"]} for r in rows]
+
+
 @router.get("/recommendations")
 async def get_recommendations():
     """首页推荐：随机精选 + 热门主题聚类。"""

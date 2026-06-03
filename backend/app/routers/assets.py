@@ -82,6 +82,8 @@ async def list_assets(
     date_from: str | None = None,
     date_to: str | None = None,
     has_gps: bool | None = None,
+    is_favorite: bool | None = None,
+    media_type: str | None = None,
     sort_by: str = Query("taken_at", pattern="^(taken_at|asset_id)$"),
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> PaginatedResponse:
@@ -96,6 +98,8 @@ async def list_assets(
         .filter_tag(tag)
         .filter_date_range(date_from, date_to)
         .filter_has_gps(has_gps)
+        .filter_favorite(is_favorite)
+        .filter_media_type(media_type)
     )
 
     count_sql, count_params = qb.build_count()

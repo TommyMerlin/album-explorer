@@ -49,6 +49,11 @@ const router = createRouter({
       component: () => import('../views/AlbumDetailPage.vue'),
     },
     {
+      path: '/favorites',
+      name: 'favorites',
+      component: () => import('../views/FavoritesPage.vue'),
+    },
+    {
       path: '/search',
       redirect: to => ({ path: '/explore', query: to.query }),
     },

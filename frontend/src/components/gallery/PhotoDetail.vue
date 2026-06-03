@@ -140,6 +140,20 @@
             <p class="text-xs text-gray-400 break-all mb-3">{{ detail.rel_path }}</p>
             <div class="space-y-2">
               <button
+                @click="toggleFavorite"
+                class="w-full px-3 py-1.5 text-sm border rounded-lg transition-colors"
+                :class="isFav
+                  ? 'text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20'
+                  : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              >
+                <span class="inline-flex items-center gap-1">
+                  <svg class="w-4 h-4" :fill="isFav ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  {{ isFav ? $t('detail.unfavorite') : $t('detail.favorite') }}
+                </span>
+              </button>
+              <button
                 @click="showAlbumPicker = true"
                 class="w-full px-3 py-1.5 text-sm text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
               >{{ $t('detail.addToAlbum') }}</button>
@@ -161,20 +175,29 @@
 </template>
 
 <script setup lang="ts">
-import { watch, ref, onMounted, onUnmounted } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUiStore } from '../../stores/ui'
+import { useFavoritesStore } from '../../stores/favorites'
 import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
 import AlbumPicker from '../AlbumPicker.vue'
 
 const emit = defineEmits<{ deleted: [assetId: number] }>()
 
 const ui = useUiStore()
+const favoritesStore = useFavoritesStore()
 const { t } = useI18n()
 const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
 const similar = ref<AssetBrief[]>([])
 const showAlbumPicker = ref(false)
+
+const isFav = computed(() => detail.value ? favoritesStore.isFavorite(detail.value.asset_id) : false)
+
+async function toggleFavorite() {
+  if (!detail.value) return
+  await favoritesStore.toggle(detail.value.asset_id)
+}
 
 function handleKeydown(e: KeyboardEvent) {
   if (!ui.detailModalOpen) return

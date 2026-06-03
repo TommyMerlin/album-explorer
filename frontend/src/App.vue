@@ -11,6 +11,11 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppSidebar from './components/layout/AppSidebar.vue'
+import { useFavoritesStore } from './stores/favorites'
+
+const favoritesStore = useFavoritesStore()
+onMounted(() => favoritesStore.load())
 </script>
