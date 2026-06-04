@@ -98,6 +98,10 @@ export function fullImageUrl(assetId: number): string {
   return `/api/thumbnails/image/${assetId}`
 }
 
+export function originalImageUrl(assetId: number): string {
+  return `/api/thumbnails/image/${assetId}?download=1`
+}
+
 export async function fetchAssets(params: Record<string, any> = {}) {
   const res = await api.get<PaginatedResponse<AssetBrief>>('/assets', { params })
   return res.data
@@ -329,6 +333,7 @@ export interface PersonInfo {
   name: string
   face_count: number
   representative_face_id: number
+  hidden: boolean
 }
 
 export interface FaceInfo {
@@ -342,8 +347,8 @@ export function faceThumbUrl(faceId: number): string {
   return `/static/faces/${faceId}.webp`
 }
 
-export async function fetchPersons() {
-  const res = await api.get<PersonInfo[]>('/persons')
+export async function fetchPersons(showHidden: boolean = false) {
+  const res = await api.get<PersonInfo[]>('/persons', { params: { show_hidden: showHidden } })
   return res.data
 }
 
@@ -376,6 +381,16 @@ export async function fetchUncategorizedFaces(params: Record<string, any> = {}) 
 
 export async function renamePerson(id: number, name: string) {
   const res = await api.patch(`/persons/${id}`, { name })
+  return res.data
+}
+
+export async function setPersonAvatar(id: number, faceId: number) {
+  const res = await api.patch(`/persons/${id}`, { representative_face_id: faceId })
+  return res.data
+}
+
+export async function hidePerson(id: number, hidden: boolean = true) {
+  const res = await api.patch(`/persons/${id}`, { hidden })
   return res.data
 }
 

@@ -7,34 +7,44 @@
     >
       <div class="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden flex">
         <!-- 图片区域 -->
-        <div class="flex-1 bg-gray-900 flex items-center justify-center min-h-[400px] relative">
-          <!-- 左箭头 -->
-          <button
-            v-if="ui.hasPrev"
-            @click="ui.navigatePrev()"
-            class="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white z-10 transition-colors"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
-          </button>
-          <img
-            v-if="detail"
-            :src="fullImageUrl(detail.asset_id)"
-            :alt="detail.caption_short || ''"
-            class="max-w-full max-h-[85vh] object-contain"
-          />
-          <div v-else class="text-white">{{ $t('detail.loading') }}</div>
-          <!-- 右箭头 -->
-          <button
-            v-if="ui.hasNext"
-            @click="ui.navigateNext()"
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white z-10 transition-colors"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-          </button>
+        <div class="flex-1 flex flex-col min-h-[400px]">
+          <div class="flex-1 bg-gray-900 flex items-center justify-center relative">
+            <!-- 左箭头 -->
+            <button
+              v-if="ui.hasPrev"
+              @click="ui.navigatePrev()"
+              class="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white z-10 transition-colors"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <img
+              v-if="detail"
+              :src="fullImageUrl(detail.asset_id)"
+              :alt="detail.caption_short || ''"
+              class="max-w-full max-h-[70vh] object-contain"
+            />
+            <div v-else class="text-white">{{ $t('detail.loading') }}</div>
+            <!-- 右箭头 -->
+            <button
+              v-if="ui.hasNext"
+              @click="ui.navigateNext()"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white z-10 transition-colors"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+          <!-- 操作按钮栏 -->
+          <div v-if="detail" class="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            <a :href="fullImageUrl(detail.asset_id)" target="_blank" class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $t('detail.viewOriginal') }}</a>
+            <a :href="originalImageUrl(detail.asset_id)" :download="detail.rel_path.split('/').pop()" class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $t('detail.downloadOriginal') }}</a>
+            <button @click="toggleFavorite" class="px-3 py-1.5 text-xs border rounded-lg transition-colors" :class="isFav ? 'text-red-500 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">{{ isFav ? $t('detail.unfavorite') : $t('detail.favorite') }}</button>
+            <button @click="showAlbumPicker = true" class="px-3 py-1.5 text-xs text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-700 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">{{ $t('detail.addToAlbum') }}</button>
+            <button @click="handleDelete" class="px-3 py-1.5 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">{{ $t('detail.deletePhoto') }}</button>
+          </div>
         </div>
         <!-- 信息面板 -->
         <div v-if="detail" class="w-80 p-5 overflow-y-auto border-l border-gray-200 dark:border-gray-700">
@@ -137,31 +147,7 @@
           </div>
 
           <div class="mt-4 pt-3 border-t border-gray-100">
-            <p class="text-xs text-gray-400 break-all mb-3">{{ detail.rel_path }}</p>
-            <div class="space-y-2">
-              <button
-                @click="toggleFavorite"
-                class="w-full px-3 py-1.5 text-sm border rounded-lg transition-colors"
-                :class="isFav
-                  ? 'text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20'
-                  : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'"
-              >
-                <span class="inline-flex items-center gap-1">
-                  <svg class="w-4 h-4" :fill="isFav ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                  </svg>
-                  {{ isFav ? $t('detail.unfavorite') : $t('detail.favorite') }}
-                </span>
-              </button>
-              <button
-                @click="showAlbumPicker = true"
-                class="w-full px-3 py-1.5 text-sm text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
-              >{{ $t('detail.addToAlbum') }}</button>
-              <button
-                @click="handleDelete"
-                class="w-full px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-              >{{ $t('detail.deletePhoto') }}</button>
-            </div>
+            <p class="text-xs text-gray-400 break-all">{{ detail.rel_path }}</p>
           </div>
         </div>
       </div>
@@ -179,7 +165,7 @@ import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUiStore } from '../../stores/ui'
 import { useFavoritesStore } from '../../stores/favorites'
-import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, addAssetToAlbum, fullImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
+import { fetchAssetDetail, fetchAssetContext, fetchSimilarAssets, deleteAsset, addAssetToAlbum, fullImageUrl, originalImageUrl, thumbnailUrl, type AssetDetail, type AssetContext, type AssetBrief } from '../../api'
 import AlbumPicker from '../AlbumPicker.vue'
 
 const emit = defineEmits<{ deleted: [assetId: number] }>()

@@ -189,8 +189,16 @@ def main() -> None:
                         continue
 
                     ih, iw = img.shape[:2]
-                    cx1, cy1 = max(0, x1), max(0, y1)
-                    cx2, cy2 = min(iw, x2), min(ih, y2)
+                    # 扩展为正方形并加 30% padding
+                    size = max(w, h)
+                    pad = int(size * 0.3)
+                    size += pad * 2
+                    cx = (x1 + x2) // 2
+                    cy = (y1 + y2) // 2
+                    cx1 = max(0, cx - size // 2)
+                    cy1 = max(0, cy - size // 2)
+                    cx2 = min(iw, cx1 + size)
+                    cy2 = min(ih, cy1 + size)
                     face_crop = img[cy1:cy2, cx1:cx2]
                     face_crop_resized = cv2.resize(face_crop, (FACE_THUMB_SIZE, FACE_THUMB_SIZE))
 

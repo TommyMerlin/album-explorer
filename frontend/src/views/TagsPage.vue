@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchTagGraph, type TagGraph } from '../api'
 import { useUiStore } from '../stores/ui'
@@ -127,10 +127,20 @@ function renderGraph(graph: TagGraph) {
       })
     )
 
+  // 根据节点连接数分配颜色
+  const colorScale = d3.scaleOrdinal(d3.schemeTableau10)
+  const degrees = new Map<string, number>()
+  links.forEach((l: any) => {
+    degrees.set(l.source.id || l.source, (degrees.get(l.source.id || l.source) || 0) + 1)
+    degrees.set(l.target.id || l.target, (degrees.get(l.target.id || l.target) || 0) + 1)
+  })
+  const degreeGroups = [...new Set([...degrees.values()].map(d => Math.min(d, 8)))]
+  degreeGroups.sort((a, b) => a - b)
+
   node.append('circle')
     .attr('r', (d: any) => nodeScale(d.count))
-    .attr('fill', '#0ea5e9')
-    .attr('fill-opacity', 0.7)
+    .attr('fill', (d: any) => colorScale(String(Math.min(degrees.get(d.id) || 1, 8))))
+    .attr('fill-opacity', 0.8)
     .attr('stroke', '#fff')
     .attr('stroke-width', 1.5)
     .style('cursor', 'pointer')
@@ -172,5 +182,12 @@ onMounted(() => {
 onUnmounted(() => {
   if (simulation) simulation.stop()
   if (resizeObserver) resizeObserver.disconnect()
+})
+
+watch(() => ui.dark, () => {
+  if (!svgRef.value) return
+  const svg = d3.select(svgRef.value)
+  svg.selectAll('text').attr('fill', ui.dark ? '#e5e7eb' : '#374151')
+  svg.selectAll('line').attr('stroke', ui.dark ? '#4b5563' : '#e5e7eb')
 })
 </script>

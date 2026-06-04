@@ -45,7 +45,7 @@ async def get_thumbnail(size: str, asset_id: int) -> FileResponse:
 
 
 @router.get("/image/{asset_id}")
-async def get_full_image(asset_id: int) -> FileResponse:
+async def get_full_image(asset_id: int, download: bool = False) -> FileResponse:
     """提供原图访问，HEIC 自动转为 JPEG 流式返回。"""
     db = await get_db()
     cursor = await db.execute(
@@ -61,6 +61,7 @@ async def get_full_image(asset_id: int) -> FileResponse:
         raise HTTPException(status_code=404, detail="原始文件不存在")
 
     source_format = row["source_format"].lower()
+    filename = abs_path.name
 
     # HEIC/HEIF 需要转换
     if source_format in ("heic", "heif"):
@@ -72,7 +73,8 @@ async def get_full_image(asset_id: int) -> FileResponse:
             register_heif_opener()
             img = Image.open(abs_path)
             img.save(converted, format="JPEG", quality=90)
-        return FileResponse(converted, media_type="image/jpeg")
+        filename = f"{abs_path.stem}.jpg"
+        return FileResponse(converted, media_type="image/jpeg", filename=filename if download else None)
 
     # 其他格式直接返回
     media_map = {
@@ -83,4 +85,4 @@ async def get_full_image(asset_id: int) -> FileResponse:
         "webp": "image/webp",
     }
     media_type = media_map.get(source_format, "application/octet-stream")
-    return FileResponse(abs_path, media_type=media_type)
+    return FileResponse(abs_path, media_type=media_type, filename=filename if download else None)

@@ -27,6 +27,10 @@
         </div>
         <div class="flex gap-2">
           <button
+            @click="handleHide"
+            class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-400 hover:text-red-500"
+          >{{ $t('persons.hide') }}</button>
+          <button
             @click="showMerge = true"
             class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
           >{{ $t('persons.merge') }}</button>
@@ -57,7 +61,7 @@
           <div
             v-for="face in faces"
             :key="face.face_id"
-            class="relative cursor-pointer"
+            class="relative cursor-pointer group"
             @click="toggleFaceSelect(face.face_id)"
           >
             <img
@@ -65,11 +69,19 @@
               class="w-full aspect-square object-cover rounded-lg"
               :class="selectedFaces.has(face.face_id) ? 'ring-2 ring-red-400' : ''"
             />
+            <div v-if="face.face_id === person?.representative_face_id" class="absolute top-1 left-1 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+              <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+            </div>
             <div v-if="selectedFaces.has(face.face_id)" class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
               <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
+            <button
+              v-if="face.face_id !== person?.representative_face_id"
+              @click.stop="handleSetAvatar(face.face_id)"
+              class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs text-center py-0.5 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            >{{ $t('persons.setAvatar') }}</button>
           </div>
         </div>
       </div>
@@ -84,7 +96,7 @@
             class="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
           >{{ $t('persons.removeFaces') }} ({{ selectedAssets.size }})</button>
         </div>
-        <div v-if="selectMode" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+        <div v-if="selectMode" class="grid gap-2" :style="{ gridTemplateColumns: `repeat(${ui.gridColumns}, minmax(0, 1fr))` }">
           <div
             v-for="item in items"
             :key="item.asset_id"
@@ -158,17 +170,18 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '../stores/ui'
 import {
   fetchPersonAssets, fetchPersonFaces, fetchPersons, renamePerson,
-  mergePersons, removePersonFaces, faceThumbUrl, thumbnailUrl,
+  mergePersons, removePersonFaces, faceThumbUrl, thumbnailUrl, setPersonAvatar, hidePerson,
   type PersonInfo, type PersonDetail, type FaceInfo, type AssetBrief,
 } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
 import PhotoDetail from '../components/gallery/PhotoDetail.vue'
 
 const route = useRoute()
+const router = useRouter()
 const ui = useUiStore()
 
 const loading = ref(true)
@@ -257,6 +270,16 @@ async function handleRemoveFaces() {
   selectedFaces.clear()
   await loadFaces()
   await loadData()
+}
+
+async function handleSetAvatar(faceId: number) {
+  await setPersonAvatar(personId, faceId)
+  if (person.value) person.value.representative_face_id = faceId
+}
+
+async function handleHide() {
+  await hidePerson(personId)
+  router.push('/persons')
 }
 
 function toggleMergeSelect(pid: number) {

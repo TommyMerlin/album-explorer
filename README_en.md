@@ -57,10 +57,10 @@ album-assetizer generates structured data → album-explorer visualizes it
 | **Timeline** | Monthly groups, first 3 months eager-loaded, rest lazy-loaded on scroll |
 | **Map View** | City-level cluster bubbles + individual markers, click to open details |
 | **Cluster Albums** | HDBSCAN embedding clustering, auto-naming, manual cover selection |
-| **Face Recognition** | InsightFace detection + embedding clustering, name/merge/exclude support, GPU accelerated |
+| **Face Recognition** | InsightFace detection + embedding clustering, name/merge/delete/set avatar support, GPU accelerated |
 | **Favorites** | One-click favorite/unfavorite with dedicated favorites page |
 | **Media Types** | Auto-classify screenshots, long images, animated images with filtered browsing |
-| **Tag Graph** | D3 force-directed graph showing tag co-occurrence |
+| **Tag Graph** | D3 force-directed graph showing tag co-occurrence, nodes colored by connectivity |
 | **Explore Page** | Full-text search + multi-dimensional filters + calendar picker, adaptive grid |
 | **Full-Text Search** | FTS5 covering descriptions, scenes, tags, city names |
 | **Manual Albums** | Create/delete albums, add/remove photos, batch operations |

@@ -16,6 +16,7 @@ router = APIRouter(prefix="/api/persons", tags=["persons"])
 class PersonUpdate(BaseModel):
     name: str | None = None
     representative_face_id: int | None = None
+    hidden: bool | None = None
 
 
 class MergeRequest(BaseModel):
@@ -48,19 +49,26 @@ async def ensure_persons_tables():
             name TEXT DEFAULT '',
             representative_face_id INTEGER,
             face_count INTEGER DEFAULT 0,
+            hidden INTEGER DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
     """)
+    # 兼容旧表：添加 hidden 列
+    try:
+        await db.execute("ALTER TABLE persons ADD COLUMN hidden INTEGER DEFAULT 0")
+    except Exception:
+        pass
     await db.commit()
 
 
 @router.get("")
-async def list_persons():
+async def list_persons(show_hidden: bool = False):
     db = await get_db()
-    cursor = await db.execute(
-        "SELECT * FROM persons ORDER BY face_count DESC"
-    )
+    if show_hidden:
+        cursor = await db.execute("SELECT * FROM persons ORDER BY face_count DESC")
+    else:
+        cursor = await db.execute("SELECT * FROM persons WHERE hidden = 0 ORDER BY face_count DESC")
     rows = await cursor.fetchall()
     return [
         {
@@ -68,6 +76,7 @@ async def list_persons():
             "name": r["name"],
             "representative_face_id": r["representative_face_id"],
             "face_count": r["face_count"],
+            "hidden": bool(r["hidden"]),
         }
         for r in rows
     ]
@@ -170,22 +179,36 @@ async def update_person(person_id: int, body: PersonUpdate):
 
     name = body.name if body.name is not None else person["name"]
     rep = body.representative_face_id if body.representative_face_id is not None else person["representative_face_id"]
+    hidden = body.hidden if body.hidden is not None else bool(person["hidden"])
     now = datetime.now().isoformat()
 
     await db.execute(
-        "UPDATE persons SET name = ?, representative_face_id = ?, updated_at = ? WHERE person_id = ?",
-        [name, rep, now, person_id],
+        "UPDATE persons SET name = ?, representative_face_id = ?, hidden = ?, updated_at = ? WHERE person_id = ?",
+        [name, rep, int(hidden), now, person_id],
     )
     await db.commit()
-    return {"person_id": person_id, "name": name, "representative_face_id": rep}
+    return {"person_id": person_id, "name": name, "representative_face_id": rep, "hidden": hidden}
 
 
 @router.post("/merge")
 async def merge_persons(body: MergeRequest):
     db = await get_db()
     cursor = await db.execute("SELECT * FROM persons WHERE person_id = ?", [body.target_id])
-    if await cursor.fetchone() is None:
+    target = await cursor.fetchone()
+    if target is None:
         raise HTTPException(status_code=404, detail="目标人物不存在")
+
+    # 如果 target 未命名，尝试从 source 中找一个已命名的
+    final_name = target["name"]
+    if not final_name:
+        for sid in body.source_ids:
+            if sid == body.target_id:
+                continue
+            cur = await db.execute("SELECT name FROM persons WHERE person_id = ?", [sid])
+            src = await cur.fetchone()
+            if src and src["name"]:
+                final_name = src["name"]
+                break
 
     for sid in body.source_ids:
         if sid == body.target_id:
@@ -196,15 +219,15 @@ async def merge_persons(body: MergeRequest):
         )
         await db.execute("DELETE FROM persons WHERE person_id = ?", [sid])
 
-    # 更新 face_count
+    # 更新 face_count 和名字
     cursor = await db.execute(
         "SELECT COUNT(DISTINCT asset_id) FROM faces WHERE person_id = ?", [body.target_id]
     )
     count = (await cursor.fetchone())[0]
     now = datetime.now().isoformat()
     await db.execute(
-        "UPDATE persons SET face_count = ?, updated_at = ? WHERE person_id = ?",
-        [count, now, body.target_id],
+        "UPDATE persons SET name = ?, face_count = ?, updated_at = ? WHERE person_id = ?",
+        [final_name, count, now, body.target_id],
     )
     await db.commit()
     return {"person_id": body.target_id, "face_count": count}
