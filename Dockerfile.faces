@@ -1,0 +1,20 @@
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+
+RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
+    sed -i 's|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-dev libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY wheels/ /tmp/wheels/
+RUN pip3 install --no-cache-dir --no-index --no-deps /tmp/wheels/*.whl && rm -rf /tmp/wheels
+
+COPY backend/app app/
+COPY backend/tasks tasks/
+
+ENV PYTHONUNBUFFERED=1
+
+ENTRYPOINT ["python3", "-m", "tasks.detect_faces"]
+CMD ["--preload-workers", "4"]

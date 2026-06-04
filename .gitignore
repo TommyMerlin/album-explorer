@@ -10,8 +10,13 @@ node_modules/
 frontend/dist/
 
 # 生成数据（体积大，不入库）
-data/thumbnails/
-data/vectors/
+data/
+
+# 构建产物
+wheels/
+frontend/tsconfig*.tsbuildinfo
+frontend/vite.config.d.ts
+frontend/vite.config.js
 
 # IDE
 .vscode/
@@ -24,3 +29,5 @@ Thumbs.db
 # Misc
 .codegraph/
 backend/*.db
+CLAUDE.md
+.env

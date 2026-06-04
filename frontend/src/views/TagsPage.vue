@@ -80,7 +80,7 @@ function renderGraph(graph: TagGraph) {
   const nodeScale = d3.scaleSqrt().domain([0, maxCount]).range([4, 24])
   const linkScale = d3.scaleLinear().domain([0, maxWeight]).range([0.5, 4])
 
-  const nodes = graph.nodes.map(n => ({ ...n, id: n.tag }))
+  const nodes = graph.nodes.map(n => ({ ...n, id: n.tag } as d3.SimulationNodeDatum & { tag: string; count: number }))
   const links = graph.edges.map(e => ({ ...e }))
 
   if (simulation) simulation.stop()
