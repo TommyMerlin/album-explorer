@@ -57,6 +57,9 @@ album-assetizer 生成结构化数据 → album-explorer 可视化浏览
 | **时间线** | 按月分组，前 3 个月立即加载，其余懒加载 |
 | **地图视图** | 城市聚合气泡 + 单点标记，点击打开详情 |
 | **聚类相册** | HDBSCAN embedding 聚类，自动命名，支持手动封面 |
+| **人物识别** | InsightFace 人脸检测 + embedding 聚类，支持命名/合并/剔除，GPU 加速 |
+| **收藏功能** | 一键收藏/取消，独立收藏页面浏览 |
+| **类型分类** | 自动识别截图、长图、动图，分类浏览 |
 | **标签图谱** | D3 力导向图展示标签共现关系 |
 | **统一探索页** | 文本搜索 + 多维筛选 + 日历选择器，自适应铺满屏幕 |
 | **全文搜索** | FTS5 覆盖描述、场景、标签、城市名 |
@@ -127,6 +130,12 @@ python -m tasks.run_clustering
 python -m tasks.build_tag_graph
 python -m tasks.build_neighbors
 python -m tasks.enrich_clusters
+
+# 人脸检测（支持 GPU 加速，也可 Docker 运行）
+python -m tasks.detect_faces --preload-workers 4
+
+# 人脸聚类（生成人物分组）
+python -m tasks.cluster_faces
 ```
 
 ---
@@ -140,6 +149,7 @@ python -m tasks.enrich_clusters
 | 地图 | Leaflet + markercluster |
 | 地理编码 | GeoPandas + 地级市 Shapefile |
 | 聚类 | HDBSCAN + bge-small-zh-v1.5 |
+| 人脸 | InsightFace (buffalo_l) + HDBSCAN + onnxruntime-gpu |
 | 相似度 | cosine similarity 预计算 Top-K 邻居 |
 | 图谱 | D3.js force layout |
 
@@ -166,6 +176,7 @@ album-explorer/
 │       └── router/           # 路由配置
 ├── docs/images/              # 项目截图
 ├── Dockerfile
+├── Dockerfile.faces            # GPU 人脸检测镜像
 ├── docker-compose.yml
 └── .env.example
 ```

@@ -57,6 +57,9 @@ album-assetizer generates structured data → album-explorer visualizes it
 | **Timeline** | Monthly groups, first 3 months eager-loaded, rest lazy-loaded on scroll |
 | **Map View** | City-level cluster bubbles + individual markers, click to open details |
 | **Cluster Albums** | HDBSCAN embedding clustering, auto-naming, manual cover selection |
+| **Face Recognition** | InsightFace detection + embedding clustering, name/merge/exclude support, GPU accelerated |
+| **Favorites** | One-click favorite/unfavorite with dedicated favorites page |
+| **Media Types** | Auto-classify screenshots, long images, animated images with filtered browsing |
 | **Tag Graph** | D3 force-directed graph showing tag co-occurrence |
 | **Explore Page** | Full-text search + multi-dimensional filters + calendar picker, adaptive grid |
 | **Full-Text Search** | FTS5 covering descriptions, scenes, tags, city names |
@@ -127,6 +130,12 @@ python -m tasks.run_clustering
 python -m tasks.build_tag_graph
 python -m tasks.build_neighbors
 python -m tasks.enrich_clusters
+
+# Face detection (GPU accelerated, can also run via Docker)
+python -m tasks.detect_faces --preload-workers 4
+
+# Face clustering (generates person groups)
+python -m tasks.cluster_faces
 ```
 
 ---
@@ -140,6 +149,7 @@ python -m tasks.enrich_clusters
 | Map | Leaflet + markercluster |
 | Geocoding | GeoPandas + city-level Shapefile |
 | Clustering | HDBSCAN + bge-small-zh-v1.5 |
+| Face | InsightFace (buffalo_l) + HDBSCAN + onnxruntime-gpu |
 | Similarity | Cosine similarity with pre-computed Top-K neighbors |
 | Graph | D3.js force layout |
 
@@ -166,6 +176,7 @@ album-explorer/
 │       └── router/           # Route config
 ├── docs/images/              # Screenshots
 ├── Dockerfile
+├── Dockerfile.faces            # GPU face detection image
 ├── docker-compose.yml
 └── .env.example
 ```
