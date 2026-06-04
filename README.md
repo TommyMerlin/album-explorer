@@ -134,8 +134,11 @@ python -m tasks.enrich_clusters
 # 人脸检测（支持 GPU 加速，也可 Docker 运行）
 python -m tasks.detect_faces --preload-workers 4
 
-# 人脸聚类（生成人物分组）
+# 人脸聚类（生成人物分组，首次使用）
 python -m tasks.cluster_faces
+
+# 新增图片后增量分配人脸到已有人物（无需重新聚类）
+python -m tasks.assign_new_faces --threshold 0.5
 ```
 
 ---

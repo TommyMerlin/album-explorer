@@ -134,8 +134,11 @@ python -m tasks.enrich_clusters
 # Face detection (GPU accelerated, can also run via Docker)
 python -m tasks.detect_faces --preload-workers 4
 
-# Face clustering (generates person groups)
+# Face clustering (generates person groups, first time only)
 python -m tasks.cluster_faces
+
+# Incrementally assign new faces to existing persons (no need to re-cluster)
+python -m tasks.assign_new_faces --threshold 0.5
 ```
 
 ---
