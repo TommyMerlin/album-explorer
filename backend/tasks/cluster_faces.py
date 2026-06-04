@@ -107,11 +107,18 @@ def main() -> None:
                     name = old_persons[fid]
                     break
 
+        # 计算不同图片数
+        cluster_asset_ids = set()
+        for fid in cluster_face_ids:
+            row = conn.execute("SELECT asset_id FROM faces WHERE face_id = ?", [fid]).fetchone()
+            if row:
+                cluster_asset_ids.add(row[0])
+
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO persons (name, representative_face_id, face_count, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?)",
-            [name, representative_face_id, len(cluster_face_ids), now, now],
+            [name, representative_face_id, len(cluster_asset_ids), now, now],
         )
         person_id = cursor.lastrowid
 

@@ -198,7 +198,7 @@ async def merge_persons(body: MergeRequest):
 
     # 更新 face_count
     cursor = await db.execute(
-        "SELECT COUNT(*) FROM faces WHERE person_id = ?", [body.target_id]
+        "SELECT COUNT(DISTINCT asset_id) FROM faces WHERE person_id = ?", [body.target_id]
     )
     count = (await cursor.fetchone())[0]
     now = datetime.now().isoformat()
@@ -224,7 +224,7 @@ async def remove_faces_from_person(person_id: int, body: FaceIdsRequest):
         )
 
     cursor = await db.execute(
-        "SELECT COUNT(*) FROM faces WHERE person_id = ?", [person_id]
+        "SELECT COUNT(DISTINCT asset_id) FROM faces WHERE person_id = ?", [person_id]
     )
     count = (await cursor.fetchone())[0]
     now = datetime.now().isoformat()
@@ -250,7 +250,7 @@ async def add_faces_to_person(person_id: int, body: FaceIdsRequest):
         )
 
     cursor = await db.execute(
-        "SELECT COUNT(*) FROM faces WHERE person_id = ?", [person_id]
+        "SELECT COUNT(DISTINCT asset_id) FROM faces WHERE person_id = ?", [person_id]
     )
     count = (await cursor.fetchone())[0]
     now = datetime.now().isoformat()

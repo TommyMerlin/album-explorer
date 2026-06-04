@@ -31,6 +31,11 @@
             class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
           >{{ $t('persons.merge') }}</button>
           <button
+            @click="selectMode = !selectMode; selectedAssets.clear()"
+            class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
+            :class="selectMode ? 'bg-red-50 dark:bg-red-900/30 border-red-300 text-red-600' : ''"
+          >{{ selectMode ? $t('common.cancel') : $t('persons.batchRemove') }}</button>
+          <button
             @click="faceMode = !faceMode"
             class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
             :class="faceMode ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-300' : ''"
@@ -71,7 +76,34 @@
 
       <!-- 照片网格 -->
       <template v-if="!faceMode">
-        <PhotoGrid :items="items" @open="handleOpen" />
+        <div v-if="selectMode" class="flex items-center justify-between mb-3">
+          <p class="text-sm text-gray-500">{{ $t('persons.selectPhotosToRemove') }}</p>
+          <button
+            v-if="selectedAssets.size > 0"
+            @click="handleRemoveByAssets"
+            class="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+          >{{ $t('persons.removeFaces') }} ({{ selectedAssets.size }})</button>
+        </div>
+        <div v-if="selectMode" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+          <div
+            v-for="item in items"
+            :key="item.asset_id"
+            class="relative cursor-pointer aspect-square"
+            @click="toggleAssetSelect(item.asset_id)"
+          >
+            <img
+              :src="thumbnailUrl(item.asset_id, 'sm')"
+              class="w-full h-full object-cover rounded-lg"
+              :class="selectedAssets.has(item.asset_id) ? 'ring-2 ring-red-400 opacity-70' : ''"
+            />
+            <div v-if="selectedAssets.has(item.asset_id)" class="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <PhotoGrid v-else :items="items" @open="handleOpen" />
         <div v-if="totalPages > 1" class="flex justify-center items-center gap-4 mt-6">
           <button
             :disabled="page <= 1"
@@ -130,7 +162,7 @@ import { useRoute } from 'vue-router'
 import { useUiStore } from '../stores/ui'
 import {
   fetchPersonAssets, fetchPersonFaces, fetchPersons, renamePerson,
-  mergePersons, removePersonFaces, faceThumbUrl,
+  mergePersons, removePersonFaces, faceThumbUrl, thumbnailUrl,
   type PersonInfo, type PersonDetail, type FaceInfo, type AssetBrief,
 } from '../api'
 import PhotoGrid from '../components/gallery/PhotoGrid.vue'
@@ -152,6 +184,9 @@ const nameInput = ref<HTMLInputElement | null>(null)
 const faceMode = ref(false)
 const faces = ref<FaceInfo[]>([])
 const selectedFaces = reactive(new Set<number>())
+
+const selectMode = ref(false)
+const selectedAssets = reactive(new Set<number>())
 
 const showMerge = ref(false)
 const otherPersons = ref<PersonInfo[]>([])
@@ -196,6 +231,24 @@ async function saveEdit() {
 function toggleFaceSelect(faceId: number) {
   if (selectedFaces.has(faceId)) selectedFaces.delete(faceId)
   else selectedFaces.add(faceId)
+}
+
+function toggleAssetSelect(assetId: number) {
+  if (selectedAssets.has(assetId)) selectedAssets.delete(assetId)
+  else selectedAssets.add(assetId)
+}
+
+async function handleRemoveByAssets() {
+  if (selectedAssets.size === 0) return
+  const faceIdsToRemove = faces.value
+    .filter(f => selectedAssets.has(f.asset_id))
+    .map(f => f.face_id)
+  if (faceIdsToRemove.length === 0) return
+  await removePersonFaces(personId, faceIdsToRemove)
+  selectedAssets.clear()
+  selectMode.value = false
+  await loadFaces()
+  await loadData()
 }
 
 async function handleRemoveFaces() {
