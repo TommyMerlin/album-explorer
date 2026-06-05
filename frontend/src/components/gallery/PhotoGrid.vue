@@ -2,6 +2,7 @@
   <div class="grid gap-2" :style="{ gridTemplateColumns: `repeat(${ui.gridColumns}, minmax(0, 1fr))` }">
     <div
       v-for="asset in items"
+      v-show="!errorSet.has(asset.asset_id)"
       :key="asset.asset_id"
       class="group relative aspect-square rounded-lg overflow-hidden cursor-pointer bg-gray-100 transition-all"
       :class="[

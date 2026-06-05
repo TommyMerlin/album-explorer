@@ -248,6 +248,19 @@ async def delete_asset(asset_id: int, confirm: bool = Query(False)):
 
     await db.commit()
 
+    # 同步写回源数据库，防止缓存刷新后删除丢失
+    from app.config import settings
+    if settings.db_path != settings.db_source and settings.db_source.exists():
+        import sqlite3
+        try:
+            src_conn = sqlite3.connect(str(settings.db_source))
+            src_conn.execute("UPDATE assets SET status = 'deleted' WHERE asset_id = ?", [asset_id])
+            src_conn.execute("DELETE FROM asset_neighbors WHERE asset_id = ? OR neighbor_id = ?", [asset_id, asset_id])
+            src_conn.commit()
+            src_conn.close()
+        except Exception:
+            pass
+
     from app.routers.timeline import invalidate_cache as invalidate_timeline_cache
     invalidate_timeline_cache()
 

@@ -117,6 +117,7 @@
                   :src="thumbnailUrl(item.asset_id, 'sm')"
                   class="w-full aspect-square object-cover rounded cursor-pointer hover:opacity-80"
                   @click="ui.openDetail(item.asset_id)"
+                  @error="($event.target as HTMLElement).style.display = 'none'"
                 />
               </div>
             </div>
@@ -129,6 +130,7 @@
                   :src="thumbnailUrl(item.asset_id, 'sm')"
                   class="w-full aspect-square object-cover rounded cursor-pointer hover:opacity-80"
                   @click="ui.openDetail(item.asset_id)"
+                  @error="($event.target as HTMLElement).style.display = 'none'"
                 />
               </div>
             </div>
@@ -141,6 +143,7 @@
                   :src="thumbnailUrl(item.asset_id, 'sm')"
                   class="w-full aspect-square object-cover rounded cursor-pointer hover:opacity-80"
                   @click="ui.openDetail(item.asset_id)"
+                  @error="($event.target as HTMLElement).style.display = 'none'"
                 />
               </div>
             </div>
