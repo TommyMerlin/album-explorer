@@ -13,6 +13,11 @@ _cache: dict = {"data": None, "ts": 0}
 _CACHE_TTL = 300
 
 
+def invalidate_cache():
+    _cache["data"] = None
+    _cache["ts"] = 0
+
+
 @router.get("")
 async def get_timeline() -> list[TimelineBucket]:
     now = time.time()

@@ -163,7 +163,23 @@ function collapseMonth(month: string) {
 
 function onAssetDeleted(assetId: number) {
   for (const month in monthAssets) {
+    const before = monthAssets[month].length
     monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== assetId)
+    if (monthAssets[month].length < before) {
+      updateBucketCount(month, -1)
+    }
+  }
+}
+
+function updateBucketCount(month: string, delta: number) {
+  const bucket = timeline.value.find(b => b.month === month)
+  if (bucket) {
+    bucket.count += delta
+    if (bucket.count <= 0) {
+      timeline.value = timeline.value.filter(b => b.month !== month)
+      delete monthAssets[month]
+      expandedMonths.delete(month)
+    }
   }
 }
 
@@ -198,7 +214,11 @@ async function handleBatchDelete() {
     if (r.status === 'fulfilled') {
       deleted++
       for (const month in monthAssets) {
+        const before = monthAssets[month].length
         monthAssets[month] = monthAssets[month].filter(a => a.asset_id !== ids[i])
+        if (monthAssets[month].length < before) {
+          updateBucketCount(month, -1)
+        }
       }
     }
   })

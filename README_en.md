@@ -62,7 +62,7 @@ album-assetizer generates structured data → album-explorer visualizes it
 | **Media Types** | Auto-classify screenshots, long images, animated images with filtered browsing |
 | **Tag Graph** | D3 force-directed graph showing tag co-occurrence, nodes colored by connectivity |
 | **Explore Page** | Full-text search + multi-dimensional filters + calendar picker, adaptive grid |
-| **Full-Text Search** | FTS5 covering descriptions, scenes, tags, city names |
+| **Full-Text Search** | Space-separated multi-keyword queries (AND semantics) + substring fuzzy matching across descriptions, scenes, tags, city names |
 | **Manual Albums** | Create/delete albums, add/remove photos, batch operations |
 | **Similarity** | Pre-computed Top-K neighbors for instant recommendations + same-day photos |
 | **i18n** | Chinese/English UI toggle with persistent preference |

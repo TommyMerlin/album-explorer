@@ -16,8 +16,6 @@ class QueryBuilder:
     def __init__(self) -> None:
         self.conditions: list[str] = ["a.status = 'done'"]
         self.params: list[Any] = []
-        self.use_fts = False
-        self.fts_query: str | None = None
 
     def filter_cluster(self, cluster_id: int | None) -> "QueryBuilder":
         if cluster_id is not None:
@@ -80,20 +78,19 @@ class QueryBuilder:
             self.params.append(media_type)
         return self
 
+    _SEARCH_COLS = ("a.caption_short", "a.scene", "a.tags_text", "a.city_name")
+
     def filter_text(self, q: str | None) -> "QueryBuilder":
-        if q:
-            self.use_fts = True
-            self.fts_query = q
+        if not q:
+            return self
+        terms = q.split()
+        for term in terms:
+            clause = " OR ".join(f"{col} LIKE ?" for col in self._SEARCH_COLS)
+            self.conditions.append(f"({clause})")
+            self.params.extend([f"%{term}%"] * len(self._SEARCH_COLS))
         return self
 
     def build_count(self) -> tuple[str, list[Any]]:
-        if self.use_fts and self.fts_query:
-            sql = (
-                "SELECT COUNT(*) FROM assets_fts "
-                "JOIN assets a ON a.rowid = assets_fts.rowid "
-                f"WHERE assets_fts MATCH ? AND {' AND '.join(self.conditions)}"
-            )
-            return sql, [self.fts_query] + self.params
         where = " AND ".join(self.conditions)
         return f"SELECT COUNT(*) FROM assets a WHERE {where}", list(self.params)
 
@@ -102,17 +99,6 @@ class QueryBuilder:
         page: int = 1, page_size: int = 50,
     ) -> tuple[str, list[Any]]:
         offset = (page - 1) * page_size
-
-        if self.use_fts and self.fts_query:
-            sql = (
-                f"SELECT {BRIEF_COLS} FROM assets_fts "
-                f"JOIN assets a ON a.rowid = assets_fts.rowid "
-                f"WHERE assets_fts MATCH ? AND {' AND '.join(self.conditions)} "
-                f"ORDER BY rank, a.taken_at DESC "
-                f"LIMIT ? OFFSET ?"
-            )
-            return sql, [self.fts_query] + self.params + [page_size, offset]
-
         where = " AND ".join(self.conditions)
         sql = (
             f"SELECT {BRIEF_COLS} FROM assets a WHERE {where} "

@@ -247,4 +247,8 @@ async def delete_asset(asset_id: int, confirm: bool = Query(False)):
     await db.execute("DELETE FROM asset_neighbors WHERE asset_id = ? OR neighbor_id = ?", [asset_id, asset_id])
 
     await db.commit()
+
+    from app.routers.timeline import invalidate_cache as invalidate_timeline_cache
+    invalidate_timeline_cache()
+
     return {"status": "deleted", "asset_id": asset_id}

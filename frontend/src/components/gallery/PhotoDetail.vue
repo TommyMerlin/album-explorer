@@ -5,9 +5,9 @@
       class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70"
       @click.self="ui.closeDetail()"
     >
-      <div class="relative bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden flex">
+      <div class="relative bg-white dark:bg-gray-800 rounded-2xl max-w-[calc(85vh+20rem)] w-full mx-4 max-h-[90vh] overflow-hidden flex">
         <!-- 图片区域 -->
-        <div class="flex-1 flex flex-col min-h-[400px]">
+        <div class="flex-1 flex flex-col min-h-[400px] aspect-square">
           <div class="flex-1 bg-gray-900 flex items-center justify-center relative">
             <!-- 左箭头 -->
             <button
@@ -23,7 +23,7 @@
               v-if="detail"
               :src="fullImageUrl(detail.asset_id)"
               :alt="detail.caption_short || ''"
-              class="max-w-full max-h-[70vh] object-contain"
+              class="max-w-full max-h-full object-contain"
             />
             <div v-else class="text-white">{{ $t('detail.loading') }}</div>
             <!-- 右箭头 -->
