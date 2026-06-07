@@ -31,3 +31,6 @@ Thumbs.db
 backend/*.db
 CLAUDE.md
 .env
+.env.*
+!.env.example
+docker-compose.override.yml

@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 from app.config import settings
 from app.database import get_db
 from app.models import AssetBrief, AssetDetail, PaginatedResponse
+from app.services.asset_paths import resolve_asset_path
 from app.services.query_builder import BRIEF_COLS, QueryBuilder
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
@@ -225,7 +226,7 @@ async def delete_asset(asset_id: int, confirm: bool = Query(False)):
         raise HTTPException(status_code=404, detail="资源不存在")
 
     # 移动原图到回收站
-    src = Path(row["abs_path"])
+    src = resolve_asset_path(row["abs_path"], row["rel_path"])
     if src.exists():
         dest = TRASH_DIR / row["rel_path"]
         dest.parent.mkdir(parents=True, exist_ok=True)

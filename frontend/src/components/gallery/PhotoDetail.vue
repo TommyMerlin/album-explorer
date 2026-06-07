@@ -5,10 +5,10 @@
       class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70"
       @click.self="ui.closeDetail()"
     >
-      <div class="relative bg-white dark:bg-gray-800 rounded-2xl max-w-[calc(85vh+20rem)] w-full mx-4 max-h-[90vh] overflow-hidden flex">
+      <div class="relative bg-white dark:bg-gray-800 rounded-2xl max-w-[calc(85vh+20rem)] w-full mx-4 max-h-[90vh] min-h-0 overflow-hidden flex">
         <!-- 图片区域 -->
-        <div class="flex-1 flex flex-col min-h-[400px] aspect-square">
-          <div class="flex-1 bg-gray-900 flex items-center justify-center relative">
+        <div class="flex-1 min-w-0 min-h-[400px] flex flex-col">
+          <div class="relative flex-1 min-h-0 bg-gray-900 flex items-center justify-center p-3">
             <!-- 左箭头 -->
             <button
               v-if="ui.hasPrev"
@@ -19,13 +19,27 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
               </svg>
             </button>
-            <img
-              v-if="detail"
-              :src="fullImageUrl(detail.asset_id)"
-              :alt="detail.caption_short || ''"
-              class="max-w-full max-h-full object-contain"
-            />
-            <div v-else class="text-white">{{ $t('detail.loading') }}</div>
+            <div
+              ref="previewViewport"
+              class="relative h-full aspect-square max-h-full max-w-full overflow-hidden rounded-xl touch-none select-none"
+              @pointerdown="startPan"
+              @pointermove="handlePan"
+              @pointerup="endPan"
+              @pointercancel="endPan"
+              @lostpointercapture="cancelPan"
+            >
+              <img
+                v-if="detail"
+                ref="previewImage"
+                :src="fullImageUrl(detail.asset_id)"
+                :alt="detail.caption_short || ''"
+                :style="previewImageStyle"
+                class="select-none"
+                draggable="false"
+                @load="handleImageLoad"
+              />
+              <div v-else class="text-white">{{ $t('detail.loading') }}</div>
+            </div>
             <!-- 右箭头 -->
             <button
               v-if="ui.hasNext"
@@ -38,7 +52,7 @@
             </button>
           </div>
           <!-- 操作按钮栏 -->
-          <div v-if="detail" class="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+          <div v-if="detail" class="shrink-0 flex flex-wrap items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
             <a :href="fullImageUrl(detail.asset_id)" target="_blank" class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $t('detail.viewOriginal') }}</a>
             <a :href="originalImageUrl(detail.asset_id)" :download="detail.rel_path.split('/').pop()" class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $t('detail.downloadOriginal') }}</a>
             <button @click="toggleFavorite" class="px-3 py-1.5 text-xs border rounded-lg transition-colors" :class="isFav ? 'text-red-500 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">{{ isFav ? $t('detail.unfavorite') : $t('detail.favorite') }}</button>
@@ -48,7 +62,7 @@
         </div>
         <!-- 信息面板 -->
         <div v-if="detail" class="w-80 p-5 overflow-y-auto border-l border-gray-200 dark:border-gray-700">
-          <button @click="ui.closeDetail()" class="absolute top-3 right-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-600 dark:text-gray-200">
+          <button @click="ui.closeDetail()" class="absolute top-3 right-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-600 dark:text-gray-200 z-10">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -164,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
+import { watch, ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUiStore } from '../../stores/ui'
 import { useFavoritesStore } from '../../stores/favorites'
@@ -180,12 +194,127 @@ const detail = ref<AssetDetail | null>(null)
 const context = ref<AssetContext | null>(null)
 const similar = ref<AssetBrief[]>([])
 const showAlbumPicker = ref(false)
+const previewViewport = ref<HTMLElement | null>(null)
+const previewImage = ref<HTMLImageElement | null>(null)
+const naturalSize = reactive({ width: 0, height: 0 })
+const renderedSize = reactive({ width: 0, height: 0 })
+const viewportSize = reactive({ width: 0, height: 0 })
+const imageOffset = reactive({ x: 0, y: 0 })
+const dragState = reactive({
+  active: false,
+  pointerId: -1,
+  startX: 0,
+  startY: 0,
+  originX: 0,
+  originY: 0,
+})
 
 const isFav = computed(() => detail.value ? favoritesStore.isFavorite(detail.value.asset_id) : false)
+const aspectRatio = computed(() => naturalSize.height ? naturalSize.width / naturalSize.height : 1)
+const useCoverFit = computed(() => aspectRatio.value >= 1.8 || aspectRatio.value <= 0.65)
+const canPan = computed(() =>
+  renderedSize.width - viewportSize.width > 1 || renderedSize.height - viewportSize.height > 1
+)
+const previewImageStyle = computed(() => ({
+  width: renderedSize.width ? `${renderedSize.width}px` : 'auto',
+  height: renderedSize.height ? `${renderedSize.height}px` : 'auto',
+  maxWidth: 'none',
+  maxHeight: 'none',
+  transform: `translate(${imageOffset.x}px, ${imageOffset.y}px)`,
+  cursor: canPan.value ? (dragState.active ? 'grabbing' : 'grab') : 'default',
+}))
 
 async function toggleFavorite() {
   if (!detail.value) return
   await favoritesStore.toggle(detail.value.asset_id)
+}
+
+function resetPreviewState() {
+  naturalSize.width = 0
+  naturalSize.height = 0
+  renderedSize.width = 0
+  renderedSize.height = 0
+  viewportSize.width = 0
+  viewportSize.height = 0
+  imageOffset.x = 0
+  imageOffset.y = 0
+  cancelPan()
+}
+
+function clampOffset(x: number, y: number) {
+  const maxX = Math.max(0, (renderedSize.width - viewportSize.width) / 2)
+  const maxY = Math.max(0, (renderedSize.height - viewportSize.height) / 2)
+  return {
+    x: Math.min(maxX, Math.max(-maxX, x)),
+    y: Math.min(maxY, Math.max(-maxY, y)),
+  }
+}
+
+function applyOffset(x: number, y: number) {
+  const clamped = clampOffset(x, y)
+  imageOffset.x = clamped.x
+  imageOffset.y = clamped.y
+}
+
+function updatePreviewLayout() {
+  const viewport = previewViewport.value
+  if (!viewport || !naturalSize.width || !naturalSize.height) return
+  const width = viewport.clientWidth
+  const height = viewport.clientHeight
+  if (!width || !height) return
+  viewportSize.width = width
+  viewportSize.height = height
+  const fit = useCoverFit.value
+    ? Math.max(width / naturalSize.width, height / naturalSize.height)
+    : Math.min(width / naturalSize.width, height / naturalSize.height)
+  renderedSize.width = naturalSize.width * fit
+  renderedSize.height = naturalSize.height * fit
+  applyOffset(imageOffset.x, imageOffset.y)
+}
+
+function syncPreviewFromImage() {
+  const img = previewImage.value
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return
+  naturalSize.width = img.naturalWidth
+  naturalSize.height = img.naturalHeight
+  updatePreviewLayout()
+}
+
+function handleImageLoad() {
+  syncPreviewFromImage()
+}
+
+function startPan(event: PointerEvent) {
+  if (!canPan.value) return
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  dragState.active = true
+  dragState.pointerId = event.pointerId
+  dragState.startX = event.clientX
+  dragState.startY = event.clientY
+  dragState.originX = imageOffset.x
+  dragState.originY = imageOffset.y
+  previewViewport.value?.setPointerCapture(event.pointerId)
+}
+
+function handlePan(event: PointerEvent) {
+  if (!dragState.active || dragState.pointerId !== event.pointerId) return
+  applyOffset(
+    dragState.originX + event.clientX - dragState.startX,
+    dragState.originY + event.clientY - dragState.startY
+  )
+}
+
+function cancelPan() {
+  dragState.active = false
+  dragState.pointerId = -1
+}
+
+function endPan(event: PointerEvent) {
+  if (dragState.pointerId !== event.pointerId) return
+  if (previewViewport.value?.hasPointerCapture(event.pointerId)) {
+    previewViewport.value.releasePointerCapture(event.pointerId)
+  }
+  cancelPan()
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -204,10 +333,12 @@ function handleKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', updatePreviewLayout)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', updatePreviewLayout)
 })
 
 async function handleAlbumSelected(albumId: number) {
@@ -238,6 +369,7 @@ async function handleDelete() {
 
 watch(() => ui.detailAssetId, async (id) => {
   if (id !== null) {
+    resetPreviewState()
     detail.value = null
     context.value = null
     similar.value = []
@@ -250,8 +382,14 @@ watch(() => ui.detailAssetId, async (id) => {
     detail.value = d
     context.value = c
     similar.value = s
+    await nextTick()
+    syncPreviewFromImage()
     preloadAdjacent()
   }
+})
+
+watch(() => ui.detailModalOpen, (open) => {
+  if (!open) resetPreviewState()
 })
 
 function preloadAdjacent() {

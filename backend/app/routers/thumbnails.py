@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import get_db
+from app.services.asset_paths import resolve_asset_path
 from app.services.thumbnail import ensure_thumbnail
 
 router = APIRouter(prefix="/api/thumbnails", tags=["thumbnails"])
@@ -22,14 +23,14 @@ async def get_thumbnail(size: str, asset_id: int) -> FileResponse:
     if not thumb_path.exists():
         db = await get_db()
         cursor = await db.execute(
-            "SELECT abs_path, source_format FROM assets WHERE asset_id = ?",
+            "SELECT abs_path, rel_path, source_format FROM assets WHERE asset_id = ?",
             [asset_id],
         )
         row = await cursor.fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="资源不存在")
 
-        abs_path = Path(row["abs_path"])
+        abs_path = resolve_asset_path(row["abs_path"], row["rel_path"])
         if not abs_path.exists():
             raise HTTPException(status_code=404, detail="原始文件不存在")
 
@@ -49,14 +50,14 @@ async def get_full_image(asset_id: int, download: bool = False) -> FileResponse:
     """提供原图访问，HEIC 自动转为 JPEG 流式返回。"""
     db = await get_db()
     cursor = await db.execute(
-        "SELECT abs_path, source_format FROM assets WHERE asset_id = ?",
+        "SELECT abs_path, rel_path, source_format FROM assets WHERE asset_id = ?",
         [asset_id],
     )
     row = await cursor.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="资源不存在")
 
-    abs_path = Path(row["abs_path"])
+    abs_path = resolve_asset_path(row["abs_path"], row["rel_path"])
     if not abs_path.exists():
         raise HTTPException(status_code=404, detail="原始文件不存在")
 
