@@ -103,10 +103,28 @@ npm run dev
 
 访问 http://localhost:3000
 
-### 3. Docker 启动（可选）
+### 3. Docker 启动（推荐）
+
+容器化部署前后端合为一体，设置 `restart: unless-stopped` 后开机自动恢复服务。
 
 ```bash
-ALBUM_EXPLORER_BASE=/path/to/your/album-data docker compose up
+# 编辑 .env，确保 ALBUM_EXPLORER_BASE 指向你的相册数据目录
+cp .env.example .env
+
+# 构建并后台启动
+docker compose up -d --build
+
+# 查看日志
+docker compose logs -f
+```
+
+访问 http://localhost:8000（前后端统一端口）
+
+停止 / 重启：
+
+```bash
+docker compose down     # 停止并移除容器
+docker compose restart  # 重启
 ```
 
 ### 4. 数据处理任务（首次使用）

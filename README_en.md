@@ -103,10 +103,28 @@ npm run dev
 
 Visit http://localhost:3000
 
-### 3. Docker (optional)
+### 3. Docker (recommended)
+
+Containerized deployment bundles frontend and backend into a single service. With `restart: unless-stopped`, it auto-recovers on boot.
 
 ```bash
-ALBUM_EXPLORER_BASE=/path/to/your/album-data docker compose up
+# Edit .env to set ALBUM_EXPLORER_BASE to your album data directory
+cp .env.example .env
+
+# Build and start in background
+docker compose up -d --build
+
+# View logs
+docker compose logs -f
+```
+
+Visit http://localhost:8000 (frontend and backend on one port)
+
+Stop / restart:
+
+```bash
+docker compose down     # stop and remove container
+docker compose restart  # restart
 ```
 
 ### 4. Data Processing Tasks (first time)
