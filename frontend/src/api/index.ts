@@ -394,6 +394,11 @@ export async function hidePerson(id: number, hidden: boolean = true) {
   return res.data
 }
 
+export async function deletePerson(id: number) {
+  const res = await api.delete(`/persons/${id}`)
+  return res.data
+}
+
 export async function mergePersons(targetId: number, sourceIds: number[]) {
   const res = await api.post('/persons/merge', { target_id: targetId, source_ids: sourceIds })
   return res.data

@@ -53,10 +53,16 @@
           </div>
           <div class="text-center">
             <p class="text-sm text-gray-500 line-clamp-1">{{ person.name || $t('persons.unnamed') }}</p>
-            <button
-              @click="handleRestore(person.person_id)"
-              class="text-xs text-primary-500 hover:text-primary-700"
-            >{{ $t('persons.restore') }}</button>
+            <div class="mt-1 flex items-center justify-center gap-2">
+              <button
+                @click="handleRestore(person.person_id)"
+                class="text-xs text-primary-500 hover:text-primary-700"
+              >{{ $t('persons.restore') }}</button>
+              <button
+                @click="handleHardDelete(person.person_id, person.name)"
+                class="text-xs text-red-500 hover:text-red-700"
+              >{{ $t('persons.deletePermanent') }}</button>
+            </div>
           </div>
         </div>
       </div>
@@ -66,8 +72,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchPersons, faceThumbUrl, hidePerson, type PersonInfo } from '../api'
+import { useI18n } from 'vue-i18n'
+import { fetchPersons, faceThumbUrl, hidePerson, deletePerson, type PersonInfo } from '../api'
 
+const { t } = useI18n()
 const persons = ref<PersonInfo[]>([])
 const hiddenPersons = ref<PersonInfo[]>([])
 const loading = ref(true)
@@ -81,6 +89,12 @@ async function loadAll() {
 
 async function handleRestore(personId: number) {
   await hidePerson(personId, false)
+  await loadAll()
+}
+
+async function handleHardDelete(personId: number, name: string) {
+  if (!window.confirm(t('persons.deletePermanentConfirm', { name: name || t('persons.unnamed') }))) return
+  await deletePerson(personId)
   await loadAll()
 }
 

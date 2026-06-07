@@ -134,6 +134,8 @@ export default {
     hideManage: '收起',
     hiddenTitle: '已删除的人物',
     restore: '恢复',
+    deletePermanent: '彻底删除',
+    deletePermanentConfirm: '确定要彻底删除人物“{name}”吗？\n该人物下的人脸将变为未分类，且此操作不可恢复。',
   },
   clusters: {
     title: '聚类相册',

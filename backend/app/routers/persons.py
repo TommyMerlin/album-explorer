@@ -190,6 +190,22 @@ async def update_person(person_id: int, body: PersonUpdate):
     return {"person_id": person_id, "name": name, "representative_face_id": rep, "hidden": hidden}
 
 
+@router.delete("/{person_id}")
+async def delete_person(person_id: int):
+    db = await get_db()
+    cursor = await db.execute("SELECT * FROM persons WHERE person_id = ?", [person_id])
+    person = await cursor.fetchone()
+    if person is None:
+        raise HTTPException(status_code=404, detail="人物不存在")
+    if not person["hidden"]:
+        raise HTTPException(status_code=400, detail="请先将人物移入已删除列表，再执行彻底删除")
+
+    await db.execute("UPDATE faces SET person_id = NULL WHERE person_id = ?", [person_id])
+    await db.execute("DELETE FROM persons WHERE person_id = ?", [person_id])
+    await db.commit()
+    return {"status": "deleted", "person_id": person_id}
+
+
 @router.post("/merge")
 async def merge_persons(body: MergeRequest):
     db = await get_db()

@@ -134,6 +134,8 @@ export default {
     hideManage: 'Collapse',
     hiddenTitle: 'Deleted People',
     restore: 'Restore',
+    deletePermanent: 'Delete Permanently',
+    deletePermanentConfirm: 'Permanently delete "{name}"?\nFaces under this person will become uncategorized, and this cannot be undone.',
   },
   clusters: {
     title: 'Clusters',
