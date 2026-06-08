@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import aiosqlite
 
 from app.config import settings
@@ -14,9 +16,64 @@ async def get_db() -> aiosqlite.Connection:
         _db.row_factory = aiosqlite.Row
         await _db.execute("PRAGMA journal_mode=WAL")
         await _db.execute("PRAGMA foreign_keys=ON")
+        await _ensure_asset_columns(_db)
         await _ensure_indexes(_db)
         await _ensure_fts(_db)
     return _db
+
+
+async def _ensure_asset_columns(db: aiosqlite.Connection) -> None:
+    """Add derived columns expected by the explorer when using older assetizer DBs."""
+    cursor = await db.execute("PRAGMA table_info(assets)")
+    existing = {row["name"] for row in await cursor.fetchall()}
+    columns = {
+        "caption_short": "TEXT",
+        "scene": "TEXT",
+        "tags_text": "TEXT",
+    }
+
+    for name, column_type in columns.items():
+        if name not in existing:
+            await db.execute(f"ALTER TABLE assets ADD COLUMN {name} {column_type}")
+
+    await _backfill_asset_columns(db)
+    await db.commit()
+
+
+async def _backfill_asset_columns(db: aiosqlite.Connection) -> None:
+    cursor = await db.execute(
+        "SELECT asset_id, result_json FROM assets "
+        "WHERE result_json IS NOT NULL "
+        "AND (caption_short IS NULL OR scene IS NULL OR tags_text IS NULL)"
+    )
+    rows = await cursor.fetchall()
+    updates: list[tuple[str | None, str | None, str | None, int]] = []
+
+    for row in rows:
+        try:
+            result = json.loads(row["result_json"]) if row["result_json"] else {}
+        except json.JSONDecodeError:
+            continue
+
+        tags = result.get("tags") or []
+        if isinstance(tags, list):
+            tags_text = "|".join(str(tag) for tag in tags if tag)
+        else:
+            tags_text = str(tags) if tags else None
+
+        updates.append((
+            result.get("caption_short"),
+            result.get("scene"),
+            tags_text,
+            row["asset_id"],
+        ))
+
+    if updates:
+        await db.executemany(
+            "UPDATE assets SET caption_short = ?, scene = ?, tags_text = ? "
+            "WHERE asset_id = ?",
+            updates,
+        )
 
 
 async def _ensure_indexes(db: aiosqlite.Connection) -> None:
